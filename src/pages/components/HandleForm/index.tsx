@@ -204,7 +204,7 @@ export default function HandleForm() {
           )}
           {recordMutation.isSuccess && (
             <div className="mb-5 mt-3 rounded-md border border-slate-300 bg-green px-3 py-2 shadow-sm">
-              {`Record added succesfully! Click "Verify" button in Bluesky`}
+              {`Record added succesfully! Click "Verify" button in BlueSky`}
             </div>
           )}
         </div>

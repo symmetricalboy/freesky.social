@@ -2,24 +2,34 @@ import Head from "next/head";
 import HandleForm from "./components/HandleForm";
 import { useState } from "react";
 import { Analytics } from "@vercel/analytics/react";
+import { api } from "~/utils/api";
 
 export default function Home() {
   const [helpVisible, setHelpVisible] = useState(false);
+  const { data: handleCount } = api.handle.getHandleCount.useQuery();
 
   return (
     <>
       <Head>
-        <title>Get custom BlueSky handle</title>
-        <meta name="description" content="Custom BlueSky handles for free" />
+        <title>freesky.social</title>
+        <meta name="description" content="Find your tribe." />
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className="bg-gradient-to-w flex min-h-screen flex-col from-[#fff] to-[#f3f9ff]">
         <div className="bg-[#f3f9ff]">
           <div className="align-center  w-full gap-12 px-4 py-16 text-center">
-            <h1 className="text-lg font-extrabold tracking-tight text-gray sm:text-[2rem]">
-              Get customised <span className="text-[#0560ff]">BlueSky</span>{" "}
-              handle
+            <h1 className="text-5xl font-extrabold tracking-tight text-gray sm:text-[2rem]">
+              Find your <span className="text-[#0560ff]">Tribe</span>.
             </h1>
+            <br/><br/>
+            <p>
+            FreeSky allows everyone to claim a more meaningful identity on BlueSky. <br/>
+            Get a BlueSky username on a shared community domain, for free. <br/>
+            </p>
+            <p className="text-xs text-slate-500">
+            <i>(Your bsky.social username will still be reserved for you.)</i>
+            </p><br/><br/>
+            <p className="text-lg font-extrabold text-gray">People have claimed <span className="text-[#0560ff]">{handleCount}</span> usernames on FreeSky!</p>
           </div>
         </div>
         <div className="triangles"></div>
@@ -33,6 +43,7 @@ export default function Home() {
             What do I need to do?
           </button>
         </div>
+        <br/><br/>
         <div>
           <div className={`${!helpVisible ? "hidden" : ""} container p-3`}>
             <div>
@@ -65,49 +76,44 @@ export default function Home() {
           </div>
         </div>
         <div className="container">
-          <div className=" mt-5 flex flex-col items-center gap-2 px-4 py-3 text-center text-sm text-slate-500">
-            <div>
-              Free and open source{" "}
-              <a
-                className="text-blue hover:text-blueLight"
-                href="https://github.com/SlickDomique/open-handles"
-                target="_blank"
-              >
-                github.com/SlickDomique/open-handles
-              </a>
+            <div className="mt-5 flex flex-col items-center gap-2 px-4 py-3 text-center text-sm text-slate-500">
+              <div>
+                freesky is free and open source
+              </div>
+              <div>
+                <a className="text-blue hover:text-blueLight" href="https://bsky.app/profile/freesky.social" target="_blank">
+                  freesky on bluesky
+                </a>{" "}
+                |{" "}
+                <a className="text-blue hover:text-blueLight" href="https://github.com/symmetricalboy/freesky.social" target="_blank">
+                  source on github
+                </a>{" "}
+                |{" "}
+                <a className="text-blue hover:text-blueLight" href="https://www.paypal.com/paypalme/symmboy" target="_blank">
+                  donate on open collective
+                </a>
+              </div>
+              <div><br/>
+                freesky is a fork of open handles by domi.zip:
+              </div>
+              <div>
+                <a className="text-blue hover:text-blueLight" href="https://bsky.app/profile/domi.zip" target="_blank">
+                  domi.zip on bluesky
+                </a>{" "}
+                |{" "}
+                <a className="text-blue hover:text-blueLight" href="https://github.com/SlickDomique/open-handles" target="_blank">
+                  open handles on github
+                </a>{" "}
+                |{" "}
+                <a className="inline-flex items-center gap-x-2 text-center text-blue hover:text-blueLight" href="https://ko-fi.com/domi_zip" target="_blank">
+                  donate to domi.zip
+                </a>
+              </div><br/>
+              <div>
+                <p className="text-xs text-black"><i>copyright (c) 2024 Dylan Gregori Singer (symmetricalboy)</i></p>
+              </div>
             </div>
-            <div>
-              You can follow the author on bsky at{" "}
-              <a
-                className="text-blue hover:text-blueLight"
-                href="https://bsky.app/profile/domi.zip"
-                target="_blank"
-              >
-                bsky.app/profile/domi.zip
-              </a>
-            </div>
-            If you like my work you can donate on{" "}
-            <a
-              href="https://ko-fi.com/domi_zip"
-              target="_blank"
-              className="inline-flex items-center gap-x-2 text-center text-blue hover:text-blueLight"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                fill="#e33232"
-                viewBox="0 0 16 16"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314z"
-                />
-              </svg>
-              https://ko-fi.com/domi_zip
-            </a>
           </div>
-        </div>
         <Analytics />
       </main>
     </>

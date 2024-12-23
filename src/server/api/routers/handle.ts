@@ -102,4 +102,14 @@ export const handleRouter = createTRPCRouter({
         },
       });
     }),
+
+  getHandleCount: publicProcedure.query(async () => {
+    try {
+      const count = await prisma.handle.count();
+      return count;
+    } catch (e) {
+      console.error(e);
+      throw Error("Could not connect to the database");
+    }
+  }),
 });
