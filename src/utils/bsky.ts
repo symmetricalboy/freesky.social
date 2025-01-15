@@ -7,7 +7,7 @@ export const getUserProfile = async (handle: string) => {
           'Accept': 'application/json',
         }
       }
-    );
+    ) as Response;
 
     const json = await response.json() as {
       message?: string;
@@ -35,7 +35,7 @@ export const validateHandle = async (handle: string) => {
           'Accept': 'application/json',
         }
       }
-    );
+    ) as Response;
     
     const json = await response.json();
     return {

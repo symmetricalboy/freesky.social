@@ -1,6 +1,6 @@
 import { env } from "process";
 
-interface CloudflareResponse {
+export interface CloudflareResponse {
   success: boolean;
   result: Array<{
     id: string;
