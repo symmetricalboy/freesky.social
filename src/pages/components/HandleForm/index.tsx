@@ -2,6 +2,8 @@ import { useState, type Dispatch, type SetStateAction, type ChangeEvent } from '
 import { api } from "~/utils/api";
 import Select from "../Select";
 import regex from "~/utils/regex";
+import { BskyAgent } from '@atproto/api';
+import AnimatedEllipsis from "../AnimatedEllipsis";
 
 type Timer = ReturnType<typeof setTimeout>;
 
@@ -17,6 +19,8 @@ export default function HandleForm() {
   const [domainName, setDomainName] = useState("bsky.social");
   const [handleValue, sethandleValue] = useState("");
   const [domainValue, setDomainValue] = useState("");
+  const [blueskyIdentifier, setBlueskyIdentifier] = useState("");
+  const [blueskyPassword, setBlueskyPassword] = useState("");
 
   // --- Form Validation ---
   const [handleValueValidator, sethandleValueValidator] =
@@ -42,21 +46,74 @@ export default function HandleForm() {
   };
 
   // --- Form Submission (Step 4) ---
-  const addRecord = () => {
+  const addRecord = async () => {
     if (recordMutation.isLoading) return;
 
-    recordMutation.mutate(
-      {
+    try {
+      // First authenticate with Bluesky
+      const agent = new BskyAgent({
+        service: 'https://bsky.social'
+      });
+
+      await agent.login({
+        identifier: blueskyIdentifier,
+        password: blueskyPassword
+      });
+
+      const did = agent.session?.did;
+      if (!did) throw new Error("Could not get DID from session");
+
+      // Submit the handle registration
+      await recordMutation.mutateAsync({
         handleValue,
-        domainValue,
+        domainValue: did,
         domainName,
-      },
-      {
-        onSuccess: () => {
-          setCurrentStep(5); // Move to step 5 on success
-        },
-      }
-    );
+        identifier: blueskyIdentifier,
+        password: blueskyPassword,
+      });
+
+      // Move to step 5 first to show manual instructions
+      setCurrentStep(5);
+
+      // Try automatic update after a longer delay to allow for DNS propagation
+      setTimeout(async () => {
+        try {
+          // Try to verify the handle first
+          const verifyAttempts = 3;
+          for(let i = 0; i < verifyAttempts; i++) {
+            try {
+              // Check if our handle verification is working
+              const response = await fetch(`/.well-known/atproto-did/${handleValue}@${domainName}`);
+              if (response.ok) {
+                // If verification is working, try to update the handle
+                await agent.updateHandle({
+                  handle: `${handleValue}.${domainName}`
+                });
+                
+                setHandleAutoUpdated(true);
+                setCurrentStep(6);
+                setBlueskyPassword("");
+                setBlueskyIdentifier("");
+                return;
+              }
+            } catch (e) {
+              console.log(`Verification attempt ${i + 1} failed, retrying...`);
+            }
+            // Wait 5 seconds between attempts
+            await new Promise(resolve => setTimeout(resolve, 5000));
+          }
+          // If we get here, we couldn't verify after all attempts
+          console.log("Could not verify handle after multiple attempts");
+        } catch (handleError) {
+          console.error("Failed to update handle:", handleError);
+          // Already on step 5, showing manual instructions
+        }
+      }, 1000); // Start checking after 1 second
+
+    } catch (error) {
+      console.error("Authentication error:", error);
+      throw error;
+    }
   };
 
   // --- Add new tRPC query ---
@@ -140,6 +197,9 @@ export default function HandleForm() {
     };
   };
 
+  // Add this state to track if handle was automatically updated
+  const [handleAutoUpdated, setHandleAutoUpdated] = useState(false);
+
   // --- Render the Form ---
   return (
     <>
@@ -198,7 +258,9 @@ export default function HandleForm() {
               {!handleValueValidator && handleValue && (
                 <div className="mt-2">
                   {isCheckingHandle ? (
-                    <span className="text-gray-500">Checking availability...</span>
+                    <span className="text-gray-500">
+                      Checking availability<AnimatedEllipsis />
+                    </span>
                   ) : handleAvailabilityStatus ? (
                     handleAvailabilityStatus.isAvailable ? (
                       <span className="text-green-600">✓ Handle is available!</span>
@@ -278,29 +340,49 @@ export default function HandleForm() {
           </div>
         )}
 
-        {/* --- Step 4: Submit DID --- */}
+        {/* --- Step 4: Verify Ownership --- */}
         {currentStep === 4 && (
           <div>
-            <h2 className="text-3xl font-bold mb-4">Submit Your DID</h2>
-            <div className="font-light">
-              <div className="font-mono">
+            <h2 className="text-3xl font-bold mb-4">Verify Ownership</h2>
+            <div className="font-light space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Bluesky Account
+                </label>
                 <input
-                  onChange={delayedInput(
-                    setDomainValue,
-                    setDomainValueValidator,
-                    regex.fileDidValue
-                  )}
-                  value={domainValue}
-                  className="block w-full rounded-md border border-slate-300 bg-white py-2 pl-3 pr-3 shadow-sm placeholder:italic placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 sm:text-sm"
-                  placeholder="did:plc:...."
+                  value={blueskyIdentifier}
+                  onChange={(e) => setBlueskyIdentifier(e.target.value)}
+                  className="block w-full rounded-md border border-slate-300 bg-[#4a6187] py-2 pl-3 pr-3 shadow-sm placeholder:italic placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 sm:text-sm"
+                  placeholder="handle.bsky.social or email"
                   type="text"
                 />
               </div>
-              {domainValueValidator && (
-                <div className="mt-2 text-red-500">
-                  Invalid DID format.
-                </div>
-              )}
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  App Password
+                </label>
+                <input
+                  value={blueskyPassword}
+                  onChange={(e) => setBlueskyPassword(e.target.value)}
+                  className="block w-full rounded-md border border-slate-300 bg-[#4a6187] py-2 pl-3 pr-3 shadow-sm placeholder:italic placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 sm:text-sm"
+                  placeholder="Your Bluesky app password"
+                  type="password"
+                />
+                <p className="mt-1 text-sm text-gray-400">
+                  We'll use these credentials to verify your identity and update your handle.
+                </p>
+              </div>
+
+              <div className="mt-4 p-4 bg-blue-100/10 border border-blue-400 rounded-md text-blue-300">
+                <p className="font-medium">What will happen:</p>
+                <ol className="list-decimal ml-4 mt-2 space-y-1">
+                  <li>We'll verify your Bluesky account</li>
+                  <li>Register {handleValue}.{domainName} for your DID</li>
+                  <li>Update your handle automatically</li>
+                </ol>
+              </div>
+
               {existingHandle && (
                 <div className="mt-4 p-4 bg-yellow-100/10 border border-yellow-400 rounded-md text-yellow-300">
                   <p className="font-medium">Warning: You already have a handle</p>
@@ -326,14 +408,14 @@ export default function HandleForm() {
               <button
                 type="button"
                 onClick={addRecord}
-                disabled={domainValueValidator || !domainValue}
+                disabled={!blueskyIdentifier || !blueskyPassword}
                 className={`px-4 py-2 rounded-md ${
-                  domainValueValidator || !domainValue
+                  !blueskyIdentifier || !blueskyPassword
                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                     : "bg-blue text-white"
                 }`}
               >
-                {existingHandle ? 'Replace Existing Handle' : 'Submit'}
+                {existingHandle ? 'Replace Handle' : 'Submit'}
               </button>
               {recordMutation.error && (
                 <div className="mt-2 text-red-500">
@@ -350,17 +432,20 @@ export default function HandleForm() {
             <h2 className="text-xl font-bold mb-4">
               Update Your Handle on Bluesky
             </h2>
+            <p className="mb-4 text-yellow-300">
+              We couldn't update your handle automatically. Please update it manually:
+            </p>
             <p className="mb-4">
               Copy the following handle and paste it into the &quot;Change Handle&quot; section on your Bluesky profile settings page:
             </p>
             <div className="bg-grayLight p-3 rounded-md flex items-center">
               <code className="font-mono text-[#092350] select-all">
-                @{handleValue}.{domainName}
+                {handleValue}.{domainName}
               </code>
               <button
                 type="button"
                 onClick={() => {
-                  void navigator.clipboard.writeText(`@${handleValue}.${domainName}`);
+                  void navigator.clipboard.writeText(`${handleValue}.${domainName}`);
                 }}
                 className="ml-4 bg-blue text-white px-3 py-1 rounded-md text-sm"
               >
@@ -384,10 +469,21 @@ export default function HandleForm() {
         {currentStep === 6 && (
           <div>
             <h2 className="text-xl font-bold mb-4">Congratulations!</h2>
-            <p>
-              You have successfully set up your custom handle. It may take some
-              time to propagate across the Bluesky network.
-            </p>
+            {handleAutoUpdated ? (
+              <div>
+                <p className="mb-4">
+                  Your handle has been successfully updated to <span className="font-mono">@{handleValue}.{domainName}</span>!
+                </p>
+                <p>
+                  The change should be visible on your profile immediately.
+                </p>
+              </div>
+            ) : (
+              <p>
+                Your handle has been registered. Please make sure you've updated it in your Bluesky settings.
+                It may take some time to propagate across the Bluesky network.
+              </p>
+            )}
           </div>
         )}
       </div>

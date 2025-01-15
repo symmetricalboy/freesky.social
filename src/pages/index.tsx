@@ -6,6 +6,7 @@ import { api } from "~/utils/api";
 import { Disclosure, Transition } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
+import AnimatedEllipsis from "./components/AnimatedEllipsis";
 
 export default function Home() {
   const [formVisible, setFormVisible] = useState(false);
@@ -74,8 +75,10 @@ export default function Home() {
             </p>
             <p className="text-lg font-extrabold">
               People have claimed{" "}
-              <span className="text-[#0560ff]">{handleCount?.count}</span> usernames on
-              Freesky!
+              <span className="text-[#0560ff]">
+                {handleCount ? handleCount.count : <AnimatedEllipsis />}
+              </span>{" "}
+              usernames on Freesky!
             </p>
 
             {/* Full-Width Section */}

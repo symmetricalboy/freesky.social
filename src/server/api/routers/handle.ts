@@ -5,6 +5,7 @@ import regex from "~/utils/regex";
 import { getUserProfile } from "~/utils/bsky";
 import { TRPCError } from "@trpc/server";
 import { env } from "~/env.mjs";
+import { BskyAgent } from '@atproto/api';
 
 async function checkIfHandleIsAvailable(handleValue: string, domainName: string) {
   const handle = await prisma.handle.findFirst({
@@ -30,15 +31,17 @@ const validateHandleFormat = (handle: string): boolean => {
 };
 
 export const handleRouter = createTRPCRouter({
-  createNew: protectedProcedure
+  createNew: publicProcedure
     .input(
       z.object({
         handleValue: z.string().regex(regex.handleValueRegex),
         domainValue: z.string().regex(regex.fileDidValue),
         domainName: z.string().regex(regex.getDomainNameRegex()),
+        identifier: z.string(),
+        password: z.string(),
       })
     )
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       // Prevent mutations in preview unless explicitly allowed
       if (env.VERCEL_ENV === "preview" && !env.ALLOW_PREVIEW_MUTATIONS) {
         throw new TRPCError({
@@ -54,89 +57,121 @@ export const handleRouter = createTRPCRouter({
         },
       });
 
-      // Step 1: Check if the handle is already taken in the database
-      try {
-        const existingHandle = await prisma.handle.findFirst({
-          where: {
-            AND: [
-              { handle: { equals: input.handleValue, mode: "insensitive" } },
-              { subdomain: { equals: input.domainName, mode: "insensitive" } },
-            ],
-          },
-        });
-
-        if (existingHandle) {
-          throw new Error("This handle is already taken!");
-        }
-      } catch (e) {
-        console.error(e);
-        throw new Error("Could not connect to the database");
-      }
-
-      // Step 2: Check if handle exists and verify ownership
-      let handle = null;
-      try {
-        handle = await prisma.handle.findFirst({
-          where: {
-            AND: [
-              { handle: { equals: input.handleValue, mode: "insensitive" } },
-              { subdomain: { equals: input.domainName, mode: "insensitive" } },
-            ],
-          },
-        });
-      } catch (e) {
-        console.error(e);
-        throw Error("Could not connect to the database");
-      }
-
-      if (handle) {
-        // check the handle owner if it was checked here more than 3 days ago
-        if (handle.updatedAt.getTime() + 1000 * 60 * 60 * 24 * 3 < Date.now()) {
-          const bskyUser = await getUserProfile(
-            `${input.handleValue}.${input.domainName}`
-          ) as {
-            status: number;
-            json: { message: string; did?: string };
-          };
-
-          if (
-            bskyUser.status === 400 &&
-            bskyUser.json.message === "Profile not found"
-          ) {
-            await prisma.handle.delete({
-              where: {
-                id: handle.id,
-              },
-            });
-          } else {
-            await prisma.handle.update({
-              where: {
-                id: handle.id,
-              },
-              data: {
-                updatedAt: new Date(),
-              },
-            });
-
-            if (bskyUser.json?.did === input.domainValue) {
-              throw Error("You already use this handle!");
-            } else {
-              throw Error("This handle is already taken!");
-            }
-          }
-        } else {
-          throw Error("This handle is already taken!");
-        }
-      }
-
-      // Create new handle record
-      await prisma.handle.create({
-        data: {
-          handle: input.handleValue,
-          subdomain: input.domainName,
-          subdomainValue: input.domainValue,
-        },
+      // Verify credentials and DID ownership
+      const agent = new BskyAgent({
+        service: 'https://bsky.social'
       });
+
+      try {
+        await agent.login({
+          identifier: input.identifier,
+          password: input.password
+        });
+
+        // Verify the DID matches - let's add some debug logging
+        console.log({
+          sessionDid: agent.session?.did,
+          inputDid: input.domainValue,
+          match: agent.session?.did === input.domainValue
+        });
+
+        if (!agent.session?.did || agent.session.did !== input.domainValue) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "The provided credentials do not match the DID"
+          });
+        }
+
+        // Step 1: Check if the handle is already taken in the database
+        try {
+          const existingHandle = await prisma.handle.findFirst({
+            where: {
+              AND: [
+                { handle: { equals: input.handleValue, mode: "insensitive" } },
+                { subdomain: { equals: input.domainName, mode: "insensitive" } },
+              ],
+            },
+          });
+
+          if (existingHandle) {
+            throw new Error("This handle is already taken!");
+          }
+        } catch (e) {
+          console.error(e);
+          throw new Error("Could not connect to the database");
+        }
+
+        // Step 2: Check if handle exists and verify ownership
+        let handle = null;
+        try {
+          handle = await prisma.handle.findFirst({
+            where: {
+              AND: [
+                { handle: { equals: input.handleValue, mode: "insensitive" } },
+                { subdomain: { equals: input.domainName, mode: "insensitive" } },
+              ],
+            },
+          });
+        } catch (e) {
+          console.error(e);
+          throw Error("Could not connect to the database");
+        }
+
+        if (handle) {
+          // check the handle owner if it was checked here more than 3 days ago
+          if (handle.updatedAt.getTime() + 1000 * 60 * 60 * 24 * 3 < Date.now()) {
+            const bskyUser = await getUserProfile(
+              `${input.handleValue}.${input.domainName}`
+            ) as {
+              status: number;
+              json: { message: string; did?: string };
+            };
+
+            if (
+              bskyUser.status === 400 &&
+              bskyUser.json.message === "Profile not found"
+            ) {
+              await prisma.handle.delete({
+                where: {
+                  id: handle.id,
+                },
+              });
+            } else {
+              await prisma.handle.update({
+                where: {
+                  id: handle.id,
+                },
+                data: {
+                  updatedAt: new Date(),
+                },
+              });
+
+              if (bskyUser.json?.did === input.domainValue) {
+                throw Error("You already use this handle!");
+              } else {
+                throw Error("This handle is already taken!");
+              }
+            }
+          } else {
+            throw Error("This handle is already taken!");
+          }
+        }
+
+        // Create new handle record
+        await prisma.handle.create({
+          data: {
+            handle: input.handleValue,
+            subdomain: input.domainName,
+            subdomainValue: input.domainValue,
+          },
+        });
+
+      } catch (error) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: error instanceof Error ? error.message : "Authentication failed"
+        });
+      }
     }),
 
   getHandleCount: publicProcedure
