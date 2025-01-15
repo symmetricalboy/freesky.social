@@ -1,10 +1,20 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { prisma } from "~/server/db";
-import cloudflareProvider from "~/server/domainProviders/cloudflare";
 import regex from "~/utils/regex";
-import { getProvider } from "~/utils/provider";
 import { getUserProfile } from "~/utils/bsky";
+
+async function checkIfHandleIsAvailable(handleValue: string, domainName: string) {
+  const handle = await prisma.handle.findFirst({
+    where: {
+      AND: [
+        { handle: { equals: handleValue, mode: "insensitive" } },
+        { subdomain: { equals: domainName, mode: "insensitive" } },
+      ],
+    },
+  });
+  return !handle;
+}
 
 export const handleRouter = createTRPCRouter({
   createNew: publicProcedure
@@ -16,6 +26,13 @@ export const handleRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input }) => {
+      // First delete any existing handle for this DID
+      await prisma.handle.deleteMany({
+        where: {
+          subdomainValue: input.domainValue,
+        },
+      });
+
       // Step 1: Check if the handle is already taken in the database
       try {
         const existingHandle = await prisma.handle.findFirst({
@@ -35,11 +52,7 @@ export const handleRouter = createTRPCRouter({
         throw new Error("Could not connect to the database");
       }
 
-      // Step 2: Proceed with other checks and logic if the handle is available
-      if (!input.handleValue || !input.domainName || !input.domainValue) {
-        throw Error("Invalid input");
-      }
-
+      // Step 2: Check if handle exists and verify ownership
       let handle = null;
       try {
         handle = await prisma.handle.findFirst({
@@ -58,7 +71,6 @@ export const handleRouter = createTRPCRouter({
       if (handle) {
         // check the handle owner if it was checked here more than 3 days ago
         if (handle.updatedAt.getTime() + 1000 * 60 * 60 * 24 * 3 < Date.now()) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           const bskyUser = await getUserProfile(
             `${input.handleValue}.${input.domainName}`
           ) as {
@@ -68,8 +80,7 @@ export const handleRouter = createTRPCRouter({
 
           if (
             bskyUser.status === 400 &&
-            bskyUser.json.message ===
-              "Profile not found"
+            bskyUser.json.message === "Profile not found"
           ) {
             await prisma.handle.delete({
               where: {
@@ -97,20 +108,7 @@ export const handleRouter = createTRPCRouter({
         }
       }
 
-      const provider = getProvider(input.domainName);
-      if (provider === "cloudflare") {
-        const creationResult = await cloudflareProvider.createSubdomain(
-          `_atproto.${input.handleValue}.${input.domainName}`,
-          input.domainValue,
-          input.domainName,
-          "TXT"
-        );
-
-        if (!creationResult) {
-          throw Error("Something went wrong. Couldn't add your handle");
-        }
-      }
-
+      // Create new handle record
       await prisma.handle.create({
         data: {
           handle: input.handleValue,
@@ -129,4 +127,34 @@ export const handleRouter = createTRPCRouter({
       throw Error("Could not connect to the database");
     }
   }),
+
+  checkAvailability: publicProcedure
+    .input(z.object({
+      handleValue: z.string(),
+      domainName: z.string(),
+    }))
+    .query(async ({ input }) => {
+      const isAvailable = await checkIfHandleIsAvailable(input.handleValue, input.domainName);
+      return { available: isAvailable };
+    }),
+
+  checkExistingHandle: publicProcedure
+    .input(z.object({
+      domainValue: z.string(),
+    }))
+    .query(async ({ input }): Promise<{ exists: true; handle: string; domain: string; } | { exists: false }> => {
+      const existingHandle = await prisma.handle.findFirst({
+        where: {
+          subdomainValue: input.domainValue,
+        },
+      });
+      
+      return existingHandle ? {
+        exists: true,
+        handle: existingHandle.handle ?? '',
+        domain: existingHandle.subdomain ?? '',
+      } : {
+        exists: false,
+      };
+    }),
 });

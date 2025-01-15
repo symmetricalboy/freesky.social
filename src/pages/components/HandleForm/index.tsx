@@ -8,43 +8,13 @@ import {
 import { api } from "~/utils/api";
 import Select from "../Select";
 import regex from "~/utils/regex";
-import { domains } from "~/utils/domains";
 
 type Timer = ReturnType<typeof setTimeout>;
-
-// Helper function for input debouncing (from old version)
-const delayedInput = (
-  onChange: Dispatch<SetStateAction<string>>,
-  action: Dispatch<SetStateAction<boolean>>,
-  regex: RegExp
-) => {
-  let timer: Timer | undefined;
-  return (event: ChangeEvent<HTMLInputElement>) => {
-    onChange(event.target.value);
-
-    clearTimeout(timer);
-
-    const newTimer = setTimeout(() => {
-      if (
-        event.target.value.length > 0 &&
-        !event.target.value.match(regex)
-      ) {
-        action(true);
-      } else {
-        action(false);
-      }
-    }, 345);
-
-    timer = newTimer;
-  };
-};
 
 export default function HandleForm() {
   // --- State Variables ---
   const [currentStep, setCurrentStep] = useState(1);
-  const [domainName, setDomainName] = useState(
-    `${Object.keys(domains)[0] || ""}`
-  );
+  const [domainName, setDomainName] = useState("bsky.social");
   const [handleValue, sethandleValue] = useState("");
   const [domainValue, setDomainValue] = useState("");
 
@@ -61,9 +31,6 @@ export default function HandleForm() {
       await utils.handle.invalidate();
     },
   });
-
-  // --- Get Domain Type (from old version) ---
-  const domainType = domains[domainName] || "file";
 
   // --- Navigation Logic ---
   const handleNext = () => {
@@ -92,16 +59,88 @@ export default function HandleForm() {
     );
   };
 
+  // --- Add new tRPC query ---
+  const [isHandleAvailable, setIsHandleAvailable] = useState<boolean | null>(null);
+  const [isCheckingHandle, setIsCheckingHandle] = useState(false);
+
+  // Add new tRPC query
+  const checkHandle = api.handle.checkAvailability.useQuery(
+    { handleValue, domainName },
+    {
+      enabled: !!handleValue && !handleValueValidator,
+      onSuccess: (data) => {
+        setIsHandleAvailable(data.available);
+        setIsCheckingHandle(false);
+      },
+      onError: () => {
+        setIsHandleAvailable(null);
+        setIsCheckingHandle(false);
+      }
+    }
+  );
+
+  // Add new state for existing handle warning
+  const [existingHandle, setExistingHandle] = useState<{
+    handle: string;
+    domain: string;
+  } | null>(null);
+
+  // Add the query
+  const checkExisting = api.handle.checkExistingHandle.useQuery(
+    { domainValue },
+    {
+      enabled: !!domainValue && !domainValueValidator,
+      onSuccess: (data) => {
+        if (data.exists) {
+          setExistingHandle({
+            handle: data.handle,
+            domain: data.domain,
+          });
+        } else {
+          setExistingHandle(null);
+        }
+      },
+    }
+  );
+
+  // Move delayedInput inside the component
+  const delayedInput = (
+    onChange: Dispatch<SetStateAction<string>>,
+    action: Dispatch<SetStateAction<boolean>>,
+    regex: RegExp
+  ) => {
+    let timer: Timer | undefined;
+    return (event: ChangeEvent<HTMLInputElement>) => {
+      const value = event.target.value;
+      onChange(value);
+      setIsHandleAvailable(null);
+      setIsCheckingHandle(true);
+
+      clearTimeout(timer);
+
+      const newTimer = setTimeout(() => {
+        if (value.length > 0 && !value.match(regex)) {
+          action(true);
+          setIsCheckingHandle(false);
+        } else {
+          action(false);
+        }
+      }, 2000);
+
+      timer = newTimer;
+    };
+  };
+
   // --- Render the Form ---
   return (
     <>
       <div className="w-full p-4 rounded-lg">
         {/* --- Progress Indicator --- */}
-        <div className="flex justify-between mb-4">
+        <div className="flex justify-between mb-8">
           {[1, 2, 3, 4, 5, 6].map((step) => (
             <div
               key={step}
-              className={`h-2 w-1/6 rounded-full ${
+              className={`h-3 w-1/6 rounded-full ${
                 step <= currentStep ? "bg-blue" : "bg-[#646464]"
               }`}
             ></div>
@@ -126,12 +165,8 @@ export default function HandleForm() {
         {/* --- Step 2: Choose Your Handle --- */}
         {currentStep === 2 && (
           <div>
-            <h2 className="text-xl font-bold mb-4">Choose Your Handle</h2>
-            <div className="mt-2">
-              Preview: @{handleValue || "customHandle"}.{domainName}
-            </div>
+            <h2 className="text-3xl font-bold mb-4">Choose Your Handle</h2>
             <div className="mt-5 rounded-md p-3 font-light">
-              <div className="pt-2">Enter your handle: </div>
               <div className="font-mono">
                 <input
                   onChange={delayedInput(
@@ -151,6 +186,17 @@ export default function HandleForm() {
                   Invalid handle format.
                 </div>
               )}
+              {!handleValueValidator && handleValue && (
+                <div className="mt-2">
+                  {isCheckingHandle ? (
+                    <span className="text-gray-500">Checking availability...</span>
+                  ) : isHandleAvailable === true ? (
+                    <span className="text-green-600">✓ Handle is available!</span>
+                  ) : isHandleAvailable === false ? (
+                    <span className="text-red-600">✗ Handle is already taken</span>
+                  ) : null}
+                </div>
+              )}
             </div>
             <div className="mt-4">
               <button
@@ -163,9 +209,9 @@ export default function HandleForm() {
               <button
                 type="button"
                 onClick={handleNext}
-                disabled={!handleValue || handleValueValidator}
+                disabled={!handleValue || handleValueValidator || !isHandleAvailable}
                 className={`px-4 py-2 rounded-md ${
-                  !handleValue || handleValueValidator
+                  !handleValue || handleValueValidator || !isHandleAvailable
                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                     : "bg-blue text-white"
                 }`}
@@ -216,38 +262,14 @@ export default function HandleForm() {
         {/* --- Step 4: Submit DID --- */}
         {currentStep === 4 && (
           <div>
-            <h2 className="text-xl font-bold mb-4">Submit Your DID</h2>
+            <h2 className="text-3xl font-bold mb-4">Submit Your DID</h2>
             <div className="font-light">
-              {domainType === "file" ? (
-                <>
-                  <div className="pt-2">
-                    Upload a text file containing your DID to:
-                  </div>
-                  <div className="font-mono">
-                    https://{handleValue || "customHandle"}.{domainName}
-                    /.well-known/atproto-did
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="pt-2">
-                    Create a TXT record with the following value:
-                  </div>
-                  <div className="font-mono">
-                    _atproto.{handleValue || "customHandle"}.{domainName}
-                  </div>
-                </>
-              )}
-
-              <div className="pt-2">DID Value:</div>
               <div className="font-mono">
                 <input
                   onChange={delayedInput(
                     setDomainValue,
                     setDomainValueValidator,
-                    domainType === "file"
-                      ? regex.fileDidValue
-                      : regex.dnsDidValue
+                    regex.fileDidValue
                   )}
                   value={domainValue}
                   className="block w-full rounded-md border border-slate-300 bg-white py-2 pl-3 pr-3 shadow-sm placeholder:italic placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 sm:text-sm"
@@ -260,13 +282,25 @@ export default function HandleForm() {
                   Invalid DID format.
                 </div>
               )}
+              {existingHandle && (
+                <div className="mt-4 p-4 bg-yellow-100/10 border border-yellow-400 rounded-md text-yellow-300">
+                  <p className="font-medium">Warning: You already have a handle</p>
+                  <p className="mt-2">
+                    You currently have the handle <span className="font-mono">@{existingHandle.handle}.{existingHandle.domain}</span>
+                  </p>
+                  <p className="mt-2">
+                    If you continue, you will lose this handle and it will be replaced with{' '}
+                    <span className="font-mono">@{handleValue}.{domainName}</span>
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="mt-4">
               <button
                 type="button"
                 onClick={handleBack}
-                className="bg-gray-300 text-white px-4 py-2 rounded-md mr-2"
+                className="bg-[#646464] text-white px-4 py-2 rounded-md mr-2"
               >
                 Back
               </button>
@@ -280,7 +314,7 @@ export default function HandleForm() {
                     : "bg-blue text-white"
                 }`}
               >
-                Submit
+                {existingHandle ? 'Replace Existing Handle' : 'Submit'}
               </button>
               {recordMutation.error && (
                 <div className="mt-2 text-red-500">

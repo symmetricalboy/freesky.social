@@ -132,41 +132,38 @@ export default function Home() {
             </div>
           </div>
           <div className="container mt-16">
-            <div className="flex flex-col items-center justify-center gap-4 px-4 py-3 text-center text-sm text-white">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center gap-8 px-4 py-3">
+              <a
+                href="https://bsky.app/profile/freesky.social"
+                target="_blank"
+                rel="noreferrer"
+                className="hover:opacity-80"
+              >
                 <Image
                   src="/bluesky.svg"
                   alt="Bluesky Logo"
-                  width={16}
-                  height={16}
-                  className="h-4 w-4 text-blue"
+                  width={32}
+                  height={32}
+                  className="h-8 w-8 text-blue"
                 />
-                <a
-                  className="text-blue hover:text-blue-300"
-                  href="https://bsky.app/profile/freesky.social"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  freesky on bluesky
-                </a>
-              </div>
-              <div className="flex items-center gap-2">
+              </a>
+              <a
+                href="https://github.com/symmetricalboy/freesky.social"
+                target="_blank"
+                rel="noreferrer"
+                className="hover:opacity-80"
+              >
                 <Image
                   src="/github.svg"
                   alt="GitHub Logo"
-                  width={16}
-                  height={16}
-                  className="h-4 w-4 text-white"
+                  width={32}
+                  height={32}
+                  className="h-8 w-8 text-white"
                 />
-                <a
-                  className="text-white hover:text-gray-300"
-                  href="https://github.com/symmetricalboy/freesky.social"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  source on github
-                </a>
-              </div>
+              </a>
+            </div>
+            <div className="text-center text-sm text-gray-400 mt-4">
+              copyright © 2025 Dylan Gregori Singer (symmetricalboy)
             </div>
           </div>
           <Analytics />

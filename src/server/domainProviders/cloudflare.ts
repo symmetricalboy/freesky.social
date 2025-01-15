@@ -10,13 +10,23 @@ const cloudflareProvider = {
     const zones = env.DOMAINS_CLOUDFLARE?.split(",");
     const zoneId = zones?.find((el) => el.startsWith(zoneName))?.split(":")[1];
 
+    const recordName = type === 'TXT' && domainName !== zoneName 
+      ? `_atproto.${domainName}` 
+      : domainName;
+      
+    const recordContent = type === 'TXT' && domainName !== zoneName
+      ? `did=${domainValue}` 
+      : domainValue;
+
     const response = await fetch(
       `https://api.cloudflare.com/client/v4/zones/${zoneId || ""}/dns_records`,
       {
         body: JSON.stringify({
-          name: domainName,
+          name: recordName,
           type,
-          content: domainValue,
+          content: recordContent,
+          ttl: 60,
+          proxied: false
         }),
         headers: {
           "Content-Type": "application/json",
@@ -31,6 +41,38 @@ const cloudflareProvider = {
     };
     const { success } = (await response.json()) as CloudflareResponse;
     return response.status === 200 && success;
+  },
+
+  deleteSubdomain: async (
+    domainName: string,
+    zoneName: string,
+    type: string
+  ) => {
+    const zones = env.DOMAINS_CLOUDFLARE?.split(",");
+    const zoneId = zones?.find((el) => el.startsWith(zoneName))?.split(":")[1];
+    
+    const recordName = type === 'TXT' ? `_atproto.${domainName}` : domainName;
+    const listResponse = await fetch(
+      `https://api.cloudflare.com/client/v4/zones/${zoneId}/dns_records?name=${recordName}`,
+      {
+        headers: {
+          Authorization: `Bearer ${env.CLOUDFLARE_SECRET || ""}`,
+        },
+      }
+    );
+    
+    const records = await listResponse.json();
+    if (records.success && records.result.length > 0) {
+      await fetch(
+        `https://api.cloudflare.com/client/v4/zones/${zoneId}/dns_records/${records.result[0].id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${env.CLOUDFLARE_SECRET || ""}`,
+          },
+        }
+      );
+    }
   },
 };
 

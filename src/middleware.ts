@@ -1,37 +1,20 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// RegExp for public files
-export async function middleware(req: NextRequest) {
-  // Clone the URL
-  await new Promise(resolve => setTimeout(resolve, 0));
-  const url = req.nextUrl.clone();
-  const host = (req.headers.get("host") as string) || "";
-  if (url.pathname.includes("_next") || url.pathname.includes("static")) return;
-  if (
-    !url.pathname.startsWith("/.well-known/atproto-did") &&
-    host.includes(".cat")
-  ) {
-    url.pathname = "/cat";
-    return NextResponse.rewrite(url);
+export function middleware(request: NextRequest) {
+  const { pathname, hostname } = request.nextUrl;
+
+  // Handle .well-known requests for subdomains
+  if (pathname.startsWith('/.well-known/atproto-did')) {
+    // Rewrite to our API endpoint
+    return NextResponse.rewrite(new URL('/api/.well-known/atproto-did', request.url));
   }
 
-  if (!url.pathname.startsWith("/.well-known/atproto-did")) return;
-
-  const fileDomains = process.env.DOMAINS_FILE_VERIFICATION?.split(",");
-
-  try {
-    const hostUrl = new URL(`https://${host}`).hostname;
-    const hostName = fileDomains?.find((el) => hostUrl.endsWith(el));
-    if (!hostName) return;
-
-    const subdomain = hostUrl.replace(`.${hostName}`, "");
-    const mainDomain = hostUrl.replace(`${subdomain}.`, "");
-    url.pathname = `/api/file-verification/${mainDomain}/${subdomain}`;
-
-    return NextResponse.rewrite(url);
-  } catch (e) {
-    console.error(e);
-    return;
-  }
+  return NextResponse.next();
 }
+
+export const config = {
+  matcher: [
+    '/.well-known/atproto-did',
+  ],
+};
