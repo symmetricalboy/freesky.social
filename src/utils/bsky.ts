@@ -9,7 +9,11 @@ export const getUserProfile = async (handle: string) => {
       }
     );
 
-    const json = await response.json();
+    const json = await response.json() as {
+      message?: string;
+      did?: string;
+    };
+
     return {
       status: response.status,
       json,

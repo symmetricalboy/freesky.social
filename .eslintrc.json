@@ -1,0 +1,9 @@
+{
+  "extends": "next/core-web-vitals",
+  "rules": {
+    "@typescript-eslint/no-floating-promises": "error",
+    "@typescript-eslint/no-unsafe-assignment": "warn",
+    "@typescript-eslint/no-unsafe-member-access": "warn",
+    "@typescript-eslint/restrict-template-expressions": "warn"
+  }
+} 
