@@ -12,6 +12,6 @@
     }
   ],
   "env": {
-    "VERCEL_ENV": "@vercel/env/VERCEL_ENV"
+    "VERCEL_ENV": "${VERCEL_ENV}"
   }
 } 
