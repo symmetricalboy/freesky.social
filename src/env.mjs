@@ -1,6 +1,9 @@
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
+const databaseUrl = process.env.DATABASE_URL;
+console.log("Database URL being used:", databaseUrl?.split("@")[1]); // Logs the URL safely without credentials
+
 export const env = createEnv({
   /**
    * Specify your server-side environment variables schema here. This way you can ensure the app
@@ -8,7 +11,8 @@ export const env = createEnv({
    */
   server: {
     DATABASE_URL: z.string().url(),
-    NODE_ENV: z.enum(["development", "test", "production"]),
+    NODE_ENV: z.enum(["development", "production", "test"]),
+    VERCEL_ENV: z.enum(["production", "preview", "development"]).optional(),
     NEXTAUTH_SECRET:
       process.env.NODE_ENV === "production"
         ? z.string().min(1)
@@ -23,6 +27,7 @@ export const env = createEnv({
     // Add `.min(1) on ID and SECRET if you want to make sure they're not empty
     DOMAINS_CLOUDFLARE: z.string(),
     CLOUDFLARE_SECRET: z.string(),
+    ALLOW_PREVIEW_MUTATIONS: z.boolean().optional().default(false),
   },
 
   /**
@@ -41,14 +46,14 @@ export const env = createEnv({
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
+    VERCEL_ENV: process.env.VERCEL_ENV,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     DOMAINS_CLOUDFLARE: process.env.DOMAINS_CLOUDFLARE,
     CLOUDFLARE_SECRET: process.env.CLOUDFLARE_SECRET,
+    ALLOW_PREVIEW_MUTATIONS: process.env.ALLOW_PREVIEW_MUTATIONS === "true",
   },
   /**
-   * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation.
-   * This is especially useful for Docker builds.
+   * Run `build` or `dev` command to see all environment variables.
    */
-  skipValidation: !!process.env.SKIP_ENV_VALIDATION,
 });

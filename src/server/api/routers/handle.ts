@@ -1,8 +1,10 @@
 import { z } from "zod";
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { createTRPCRouter, publicProcedure, protectedProcedure } from "~/server/api/trpc";
 import { prisma } from "~/server/db";
 import regex from "~/utils/regex";
 import { getUserProfile } from "~/utils/bsky";
+import { TRPCError } from "@trpc/server";
+import { env } from "~/env.mjs";
 
 async function checkIfHandleIsAvailable(handleValue: string, domainName: string) {
   const handle = await prisma.handle.findFirst({
@@ -17,7 +19,7 @@ async function checkIfHandleIsAvailable(handleValue: string, domainName: string)
 }
 
 export const handleRouter = createTRPCRouter({
-  createNew: publicProcedure
+  createNew: protectedProcedure
     .input(
       z.object({
         handleValue: z.string().regex(regex.handleValueRegex),
@@ -25,7 +27,15 @@ export const handleRouter = createTRPCRouter({
         domainName: z.string().regex(regex.getDomainNameRegex()),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      // Prevent mutations in preview unless explicitly allowed
+      if (env.VERCEL_ENV === "preview" && !env.ALLOW_PREVIEW_MUTATIONS) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Mutations are not allowed in preview deployments",
+        });
+      }
+      
       // First delete any existing handle for this DID
       await prisma.handle.deleteMany({
         where: {
@@ -131,9 +141,20 @@ export const handleRouter = createTRPCRouter({
   checkAvailability: publicProcedure
     .input(z.object({
       handleValue: z.string(),
-      domainName: z.string(),
+      domainName: z.string()
     }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      console.log(`Checking availability for ${input.handleValue}@${input.domainName}`);
+      
+      // Check database
+      const dbRecord = await prisma.handle.findFirst({
+        where: {
+          handle: input.handleValue,
+          subdomain: input.domainName,
+        },
+      });
+      console.log('Database record:', dbRecord);
+
       const isAvailable = await checkIfHandleIsAvailable(input.handleValue, input.domainName);
       return { available: isAvailable };
     }),

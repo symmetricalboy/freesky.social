@@ -7,12 +7,15 @@ export const getUserProfile = async (handle: string) => {
           'Accept': 'application/json',
         }
       }
-    ) as Response;
+    );
 
-    const json = await response.json() as {
+    interface ProfileResponse {
       message?: string;
       did?: string;
-    };
+    }
+
+    const data: unknown = await response.json();
+    const json = data as ProfileResponse;
 
     return {
       status: response.status,
@@ -35,9 +38,16 @@ export const validateHandle = async (handle: string) => {
           'Accept': 'application/json',
         }
       }
-    ) as Response;
+    );
     
-    const json = await response.json();
+    interface ValidateResponse {
+      did: string;
+      handle: string;
+    }
+
+    const data: unknown = await response.json();
+    const json = data as ValidateResponse;
+    
     return {
       status: response.status,
       json,

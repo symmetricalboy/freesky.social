@@ -1,4 +1,4 @@
-import { useState, useCallback, type Dispatch, type SetStateAction, type ChangeEvent } from 'react'
+import { useState, type Dispatch, type SetStateAction, type ChangeEvent } from 'react'
 import { api } from "~/utils/api";
 import Select from "../Select";
 import regex from "~/utils/regex";
@@ -58,7 +58,7 @@ export default function HandleForm() {
   const [isCheckingHandle, setIsCheckingHandle] = useState(false);
 
   // Add new tRPC query
-  const checkHandle = api.handle.checkAvailability.useQuery(
+  const _handleAvailabilityQuery = api.handle.checkAvailability.useQuery(
     { handleValue, domainName },
     {
       enabled: !!handleValue && !handleValueValidator,
@@ -80,7 +80,7 @@ export default function HandleForm() {
   } | null>(null);
 
   // Add the query
-  const checkExisting = api.handle.checkExistingHandle.useQuery(
+  const _existingHandleQuery = api.handle.checkExistingHandle.useQuery(
     { domainValue },
     {
       enabled: !!domainValue && !domainValueValidator,
@@ -326,8 +326,7 @@ export default function HandleForm() {
               Update Your Handle on Bluesky
             </h2>
             <p className="mb-4">
-              Copy the following handle and paste it into the "Change Handle"
-              section on your Bluesky profile settings page:
+              Copy the following handle and paste it into the &quot;Change Handle&quot; section on your Bluesky profile settings page:
             </p>
             <div className="bg-grayLight p-3 rounded-md flex items-center">
               <code className="font-mono text-[#092350] select-all">
@@ -336,9 +335,7 @@ export default function HandleForm() {
               <button
                 type="button"
                 onClick={() => {
-                  navigator.clipboard.writeText(
-                    `@${handleValue}.${domainName}`
-                  );
+                  void navigator.clipboard.writeText(`@${handleValue}.${domainName}`);
                 }}
                 className="ml-4 bg-blue text-white px-3 py-1 rounded-md text-sm"
               >
