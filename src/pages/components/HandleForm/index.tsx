@@ -89,7 +89,7 @@ export default function HandleForm() {
       setCurrentStep(5);
 
       // Try automatic update after a longer delay to allow for DNS propagation
-      setTimeout(async () => {
+      void setTimeout(async () => {
         try {
           // Try to verify the handle first
           const verifyAttempts = 3;
@@ -302,7 +302,7 @@ export default function HandleForm() {
                   type="password"
                 />
                 <p className="mt-1 text-sm text-gray-400">
-                  We'll use these credentials to verify your identity and update your handle.
+                  We&apos;ll use these credentials to verify your identity and update your handle.
                 </p>
               </div>
 
@@ -352,7 +352,7 @@ export default function HandleForm() {
               Update Your Handle on Bluesky
             </h2>
             <p className="mb-4 text-yellow-300">
-              We couldn't update your handle automatically. Please update it manually:
+              We couldn&apos;t update your handle automatically. Please update it manually:
             </p>
             <p className="mb-4">
               Copy the following handle and paste it into the &quot;Change Handle&quot; section on your Bluesky profile settings page:
@@ -399,7 +399,7 @@ export default function HandleForm() {
               </div>
             ) : (
               <p>
-                Your handle has been registered. Please make sure you've updated it in your Bluesky settings.
+                Your handle has been registered. Please make sure you&apos;ve updated it in your Bluesky settings.
                 It may take some time to propagate across the Bluesky network.
               </p>
             )}
