@@ -89,39 +89,41 @@ export default function HandleForm() {
       setCurrentStep(5);
 
       // Try automatic update after a longer delay to allow for DNS propagation
-      void setTimeout(async () => {
-        try {
-          // Try to verify the handle first
-          const verifyAttempts = 3;
-          for(let i = 0; i < verifyAttempts; i++) {
-            try {
-              // Check if our handle verification is working
-              const response = await fetch(`/.well-known/atproto-did/${handleValue}@${domainName}`);
-              if (response.ok) {
-                // If verification is working, try to update the handle
-                await agent.updateHandle({
-                  handle: `${handleValue}.${domainName}`
-                });
-                
-                setHandleAutoUpdated(true);
-                setCurrentStep(6);
-                setBlueskyPassword("");
-                setBlueskyIdentifier("");
-                return;
+      setTimeout(() => {
+        void (async () => {
+          try {
+            // Try to verify the handle first
+            const verifyAttempts = 3;
+            for(let i = 0; i < verifyAttempts; i++) {
+              try {
+                // Check if our handle verification is working
+                const response = await fetch(`/.well-known/atproto-did/${handleValue}@${domainName}`);
+                if (response.ok) {
+                  // If verification is working, try to update the handle
+                  await agent.updateHandle({
+                    handle: `${handleValue}.${domainName}`
+                  });
+                  
+                  setHandleAutoUpdated(true);
+                  setCurrentStep(6);
+                  setBlueskyPassword("");
+                  setBlueskyIdentifier("");
+                  return;
+                }
+              } catch (e) {
+                console.log(`Verification attempt ${i + 1} failed, retrying...`);
               }
-            } catch (e) {
-              console.log(`Verification attempt ${i + 1} failed, retrying...`);
+              // Wait 5 seconds between attempts
+              await new Promise(resolve => setTimeout(resolve, 5000));
             }
-            // Wait 5 seconds between attempts
-            await new Promise(resolve => setTimeout(resolve, 5000));
+            // If we get here, we couldn't verify after all attempts
+            console.log("Could not verify handle after multiple attempts");
+          } catch (handleError) {
+            console.error("Failed to update handle:", handleError);
+            // Already on step 5, showing manual instructions
           }
-          // If we get here, we couldn't verify after all attempts
-          console.log("Could not verify handle after multiple attempts");
-        } catch (handleError) {
-          console.error("Failed to update handle:", handleError);
-          // Already on step 5, showing manual instructions
-        }
-      }, 1000); // Start checking after 1 second
+        })();
+      }, 1000);
 
     } catch (error) {
       console.error("Authentication error:", error);
@@ -309,7 +311,7 @@ export default function HandleForm() {
               <div className="mt-4 p-4 bg-blue-100/10 border border-blue-400 rounded-md text-blue-300">
                 <p className="font-medium">What will happen:</p>
                 <ol className="list-decimal ml-4 mt-2 space-y-1">
-                  <li>We'll verify your Bluesky account</li>
+                  <li>We&apos;ll verify your Bluesky account</li>
                   <li>Register {handleValue}.{domainName} for your DID</li>
                   <li>Update your handle automatically</li>
                 </ol>
