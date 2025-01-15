@@ -18,6 +18,17 @@ async function checkIfHandleIsAvailable(handleValue: string, domainName: string)
   return !handle;
 }
 
+const validateHandleFormat = (handle: string): boolean => {
+  // Handle should be 3-30 characters
+  if (handle.length < 3 || handle.length > 30) {
+    return false;
+  }
+
+  // Only allow letters, numbers, underscores, and hyphens
+  const validHandleRegex = /^[a-zA-Z0-9_-]+$/;
+  return validHandleRegex.test(handle);
+};
+
 export const handleRouter = createTRPCRouter({
   createNew: protectedProcedure
     .input(
@@ -155,17 +166,54 @@ export const handleRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       console.log(`Checking availability for ${input.handleValue}@${input.domainName}`);
       
-      // Check database
-      const dbRecord = await prisma.handle.findFirst({
-        where: {
-          handle: input.handleValue,
-          subdomain: input.domainName,
-        },
-      });
-      console.log('Database record:', dbRecord);
+      // First validate handle format
+      if (!validateHandleFormat(input.handleValue)) {
+        return { available: false, error: "Invalid handle format" };
+      }
 
-      const isAvailable = await checkIfHandleIsAvailable(input.handleValue, input.domainName);
-      return { available: isAvailable };
+      try {
+        // Check database with timeout
+        const dbPromise = prisma.handle.findFirst({
+          where: {
+            handle: input.handleValue,
+            subdomain: input.domainName,
+          },
+        });
+        
+        const dbRecord = await Promise.race([
+          dbPromise,
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Database timeout')), 5000)
+          )
+        ]);
+
+        if (dbRecord) {
+          return { available: false, error: "Handle already registered" };
+        }
+
+        // Check if handle exists on Bluesky
+        const bskyUser = await getUserProfile(
+          `${input.handleValue}.${input.domainName}`
+        ) as {
+          status: number;
+          json: { message: string; did?: string };
+        };
+
+        // If we get a 400 with "Profile not found", the handle is available
+        if (bskyUser.status === 400 && bskyUser.json.message === "Profile not found") {
+          return { available: true };
+        }
+
+        return { available: false, error: "Handle already exists on Bluesky" };
+
+      } catch (e) {
+        console.error('Error checking handle availability:', e);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to check handle availability',
+          cause: e,
+        });
+      }
     }),
 
   checkExistingHandle: publicProcedure

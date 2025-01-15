@@ -5,6 +5,12 @@ import regex from "~/utils/regex";
 
 type Timer = ReturnType<typeof setTimeout>;
 
+// Add a new type for handle availability response
+type HandleAvailabilityResponse = {
+  available: boolean;
+  error?: string;
+};
+
 export default function HandleForm() {
   // --- State Variables ---
   const [currentStep, setCurrentStep] = useState(1);
@@ -57,17 +63,26 @@ export default function HandleForm() {
   const [isHandleAvailable, setIsHandleAvailable] = useState<boolean | null>(null);
   const [isCheckingHandle, setIsCheckingHandle] = useState(false);
 
-  // Add new tRPC query
+  // Update the state to include error message
+  const [handleAvailabilityStatus, setHandleAvailabilityStatus] = useState<{
+    isAvailable: boolean | null;
+    error?: string;
+  } | null>(null);
+
+  // Update the tRPC query
   const _handleAvailabilityQuery = api.handle.checkAvailability.useQuery(
     { handleValue, domainName },
     {
       enabled: !!handleValue && !handleValueValidator,
-      onSuccess: (data) => {
-        setIsHandleAvailable(data.available);
+      onSuccess: (data: HandleAvailabilityResponse) => {
+        setHandleAvailabilityStatus({
+          isAvailable: data.available,
+          error: data.error
+        });
         setIsCheckingHandle(false);
       },
       onError: () => {
-        setIsHandleAvailable(null);
+        setHandleAvailabilityStatus(null);
         setIsCheckingHandle(false);
       }
     }
@@ -184,10 +199,14 @@ export default function HandleForm() {
                 <div className="mt-2">
                   {isCheckingHandle ? (
                     <span className="text-gray-500">Checking availability...</span>
-                  ) : isHandleAvailable === true ? (
-                    <span className="text-green-600">✓ Handle is available!</span>
-                  ) : isHandleAvailable === false ? (
-                    <span className="text-red-600">✗ Handle is already taken</span>
+                  ) : handleAvailabilityStatus ? (
+                    handleAvailabilityStatus.isAvailable ? (
+                      <span className="text-green-600">✓ Handle is available!</span>
+                    ) : (
+                      <span className="text-red-600">
+                        ✗ {handleAvailabilityStatus.error || "Handle is not available"}
+                      </span>
+                    )
                   ) : null}
                 </div>
               )}
@@ -203,9 +222,15 @@ export default function HandleForm() {
               <button
                 type="button"
                 onClick={handleNext}
-                disabled={!handleValue || handleValueValidator || !isHandleAvailable}
+                disabled={
+                  !handleValue || 
+                  handleValueValidator || 
+                  !handleAvailabilityStatus?.isAvailable
+                }
                 className={`px-4 py-2 rounded-md ${
-                  !handleValue || handleValueValidator || !isHandleAvailable
+                  !handleValue || 
+                  handleValueValidator || 
+                  !handleAvailabilityStatus?.isAvailable
                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                     : "bg-blue text-white"
                 }`}
