@@ -2,11 +2,9 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 // RegExp for public files
-const PUBLIC_FILE = /\.(.*)$/; // Files
-
-// eslint-disable-next-line @typescript-eslint/require-await
 export async function middleware(req: NextRequest) {
   // Clone the URL
+  await new Promise(resolve => setTimeout(resolve, 0));
   const url = req.nextUrl.clone();
   const host = (req.headers.get("host") as string) || "";
   if (url.pathname.includes("_next") || url.pathname.includes("static")) return;

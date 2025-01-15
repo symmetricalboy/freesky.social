@@ -1,12 +1,8 @@
-import { env } from "process";
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { prisma } from "~/server/db";
 import cloudflareProvider from "~/server/domainProviders/cloudflare";
 import regex from "~/utils/regex";
-
-import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
 import { getProvider } from "~/utils/provider";
 import { getUserProfile } from "~/utils/bsky";
 
@@ -43,15 +39,17 @@ export const handleRouter = createTRPCRouter({
         // check the handle owner if it was checked here more than 3 days ago
         if (handle.updatedAt.getTime() + 1000 * 60 * 60 * 24 * 3 < Date.now()) {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          const bskyUser: any = await getUserProfile(
+          const bskyUser = await getUserProfile(
             `${input.handleValue}.${input.domainName}`
-          );
+          ) as {
+            status: number;
+            json: { message: string; did?: string };
+          };
 
           if (
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             bskyUser.status === 400 &&
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            bskyUser.json.message === "Profile not found"
+            bskyUser.json.message ===
+              "Profile not found"
           ) {
             await prisma.handle.delete({
               where: {
@@ -68,8 +66,7 @@ export const handleRouter = createTRPCRouter({
               },
             });
 
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            if (bskyUser.json.did === input.domainValue) {
+            if (bskyUser.json?.did === input.domainValue) {
               throw Error("You already use this handle!");
             } else {
               throw Error("This handle is already taken!");

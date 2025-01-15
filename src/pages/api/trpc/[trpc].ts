@@ -2,13 +2,24 @@ import { createNextApiHandler } from "@trpc/server/adapters/next";
 import { env } from "~/env.mjs";
 import { appRouter } from "~/server/api/root";
 import { createTRPCContext } from "~/server/api/trpc";
-import cors from "nextjs-cors";
-import { NextApiRequest, NextApiResponse } from "next";
+import type { NextApiRequest, NextApiResponse } from "next";
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
-  // Enable cors
-  await cors(req, res);
+  // Configure CORS headers
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, x-trpc"
+  );
 
+  if (req.method === "OPTIONS") {
+    res.status(200).end();
+    return;
+  }
+
+  // Add an await expression
+  await new Promise((resolve) => setTimeout(resolve, 0));
   return createNextApiHandler({
     router: appRouter,
     createContext: createTRPCContext,
