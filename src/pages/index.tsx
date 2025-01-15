@@ -74,8 +74,8 @@ export default function Home() {
             </p>
             <p className="text-lg font-extrabold">
               People have claimed{" "}
-              <span className="text-[#0560ff]">{handleCount}</span> usernames on
-              FreeSky!
+              <span className="text-[#0560ff]">{handleCount?.count}</span> usernames on
+              Freesky!
             </p>
 
             {/* Full-Width Section */}

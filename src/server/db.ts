@@ -1,21 +1,18 @@
 import { PrismaClient } from "@prisma/client";
-import { env } from "~/env.mjs";
 
-const getDatabaseUrl = () => {
-  const url = new URL(env.DATABASE_URL);
-  
-  // Add environment suffix to database name for non-production environments
-  if (env.VERCEL_ENV !== "production") {
-    url.pathname = `${url.pathname}_${env.VERCEL_ENV ?? 'preview'}`;
-  }
-  
-  return url.toString();
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
 };
 
-export const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: getDatabaseUrl(),
-    },
-  },
-});
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL_UNPOOLED // Try using unpooled connection
+      }
+    }
+  });
+
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;

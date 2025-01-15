@@ -128,15 +128,24 @@ export const handleRouter = createTRPCRouter({
       });
     }),
 
-  getHandleCount: publicProcedure.query(async () => {
-    try {
-      const count = await prisma.handle.count();
-      return count;
-    } catch (e) {
-      console.error(e);
-      throw Error("Could not connect to the database");
-    }
-  }),
+  getHandleCount: publicProcedure
+    .query(async () => {
+      try {
+        // Try with unpooled connection first
+        const count = await prisma.$queryRaw<[{ count: bigint }]>`
+          SELECT COUNT(*) as count 
+          FROM "Handle"
+        `;
+        return { count: Number(count[0].count) };
+      } catch (e) {
+        console.error('Database connection error:', e);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Database connection failed',
+          cause: e,
+        });
+      }
+    }),
 
   checkAvailability: publicProcedure
     .input(z.object({
