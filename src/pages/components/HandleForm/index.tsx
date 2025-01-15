@@ -4,25 +4,38 @@ import {
   type SetStateAction,
   useState,
   useRef,
-  useEffect,
 } from "react";
 import { api } from "~/utils/api";
 import Select from "../Select";
 import regex from "~/utils/regex";
 import { domains } from "~/utils/domains";
 
-// Helper function for input debouncing (remains unchanged)
+type Timer = ReturnType<typeof setTimeout>;
+
+// Helper function for input debouncing (from old version)
 const delayedInput = (
-  func: (event: ChangeEvent<HTMLInputElement>) => void
+  onChange: Dispatch<SetStateAction<string>>,
+  action: Dispatch<SetStateAction<boolean>>,
+  regex: RegExp
 ) => {
-  let timer: NodeJS.Timeout | null = null;
+  let timer: Timer | undefined;
   return (event: ChangeEvent<HTMLInputElement>) => {
-    if (timer) {
-      clearTimeout(timer);
-    }
-    timer = setTimeout(() => {
-      func(event);
-    }, 300);
+    onChange(event.target.value);
+
+    clearTimeout(timer);
+
+    const newTimer = setTimeout(() => {
+      if (
+        event.target.value.length > 0 &&
+        !event.target.value.match(regex)
+      ) {
+        action(true);
+      } else {
+        action(false);
+      }
+    }, 345);
+
+    timer = newTimer;
   };
 };
 
@@ -33,9 +46,6 @@ export default function HandleForm() {
     `${Object.keys(domains)[0] || ""}`
   );
   const [handleValue, sethandleValue] = useState("");
-  const [isHandleAvailable, setIsHandleAvailable] = useState<boolean | null>(
-    null
-  ); // null for initial state, true/false after check
   const [domainValue, setDomainValue] = useState("");
 
   // --- Form Validation ---
@@ -43,65 +53,26 @@ export default function HandleForm() {
     useState<boolean>(false);
   const [domainValueValidator, setDomainValueValidator] =
     useState<boolean>(false);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // --- tRPC Hooks ---
   const utils = api.useContext();
-  const checkHandleAvailability = api.handle.checkAvailability.useMutation();
   const recordMutation = api.handle.createNew.useMutation({
     onMutate: async () => {
       await utils.handle.invalidate();
     },
   });
 
-  // --- Effect to Check Handle Availability (Step 2) ---
-  useEffect(() => {
-    if (currentStep === 2 && handleValue) {
-      setIsHandleAvailable(null); // Reset when handleValue changes
+  // --- Get Domain Type (from old version) ---
+  const domainType = domains[domainName] || "file";
 
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
+  // --- Navigation Logic ---
+  const handleNext = () => {
+    setCurrentStep((prevStep) => prevStep + 1);
+  };
 
-      timerRef.current = setTimeout(() => {
-        checkHandleAvailability.mutate(
-          { handle: `${handleValue}.${domainName}` },
-          {
-            onSuccess: (data) => {
-              setIsHandleAvailable(data.available);
-            },
-            onError: (error) => {
-              console.error("Handle availability check failed:", error);
-              setIsHandleAvailable(false); // Treat errors as unavailable
-            },
-          }
-        );
-      }, 500); // Debounce the check
-    }
-
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-    };
-  }, [handleValue, domainName, currentStep]);
-
-  // --- Input Change Handler with Validation ---
-  const handleInputChange = (
-    onChange: Dispatch<SetStateAction<string>>,
-    action: Dispatch<SetStateAction<boolean>>,
-    validationRegex: RegExp
-  ) =>
-    delayedInput((event: ChangeEvent<HTMLInputElement>) => {
-      const newValue = event.target.value;
-      onChange(newValue);
-
-      if (newValue.length > 0 && !newValue.match(validationRegex)) {
-        action(true);
-      } else {
-        action(false);
-      }
-    });
+  const handleBack = () => {
+    setCurrentStep((prevStep) => prevStep - 1);
+  };
 
   // --- Form Submission (Step 4) ---
   const addRecord = () => {
@@ -120,22 +91,6 @@ export default function HandleForm() {
       }
     );
   };
-
-  // --- Navigation Logic ---
-  const handleNext = () => {
-    if (currentStep === 2 && isHandleAvailable === false) {
-      return; // Prevent moving forward if handle is not available
-    }
-    setCurrentStep((prevStep) => prevStep + 1);
-  };
-
-  const handleBack = () => {
-    setCurrentStep((prevStep) => prevStep - 1);
-  };
-
-  // --- Get Domain Type ---
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const domainType = domains[domainName] || "file";
 
   // --- Render the Form ---
   return (
@@ -168,67 +123,59 @@ export default function HandleForm() {
           </div>
         )}
 
-        {
-          /* --- Step 2: Check handle availability --- */
-        }
-        {
-          currentStep === 2 && (
-            <div>
-              <h2 className="text-xl font-bold mb-4">Choose Your Handle</h2>
-              <div className="mt-2">
-                Preview: @{handleValue || "customHandle"}.{domainName}
-              </div>
-              <div className="mt-5 rounded-md p-3 font-light">
-                <div className="pt-2">Enter your handle: </div>
-                <div className="font-mono">
-                  <input
-                    onChange={handleInputChange(
-                      sethandleValue,
-                      sethandleValueValidator,
-                      regex.handleValueRegex
-                    )}
-                    value={handleValue}
-                    className="inline-block rounded-md border border-slate-300 bg-white py-2 pl-3 pr-3 shadow-sm placeholder:italic placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 sm:text-sm"
-                    placeholder="customHandle"
-                    type="text"
-                  />
-                  .{domainName}
-                </div>
-                {handleValueValidator && (
-                  <div className="mt-2 text-red-500">Invalid handle format.</div>
-                )}
-                {isHandleAvailable === true && (
-                  <div className="mt-2 text-green-500">Handle is available!</div>
-                )}
-                {isHandleAvailable === false && (
-                  <div className="mt-2 text-red-500">Handle is not available.</div>
-                )}
-              </div>
-              <div className="mt-4">
-                <button
-                  type="button"
-                  onClick={handleBack}
-                  className="bg-gray-300 text-white px-4 py-2 rounded-md mr-2"
-                >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  disabled={!handleValue || handleValueValidator || !isHandleAvailable}
-                  className={`px-4 py-2 rounded-md ${
-                    !handleValue || handleValueValidator || !isHandleAvailable
-                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "bg-blue text-white"
-                  }`}
-                >
-                  Next
-                </button>
-              </div>
+        {/* --- Step 2: Choose Your Handle --- */}
+        {currentStep === 2 && (
+          <div>
+            <h2 className="text-xl font-bold mb-4">Choose Your Handle</h2>
+            <div className="mt-2">
+              Preview: @{handleValue || "customHandle"}.{domainName}
             </div>
-          )
-        }
-        
+            <div className="mt-5 rounded-md p-3 font-light">
+              <div className="pt-2">Enter your handle: </div>
+              <div className="font-mono">
+                <input
+                  onChange={delayedInput(
+                    sethandleValue,
+                    sethandleValueValidator,
+                    regex.handleValueRegex
+                  )}
+                  value={handleValue}
+                  className="inline-block rounded-md border border-slate-300 bg-[#4a6187] py-2 pl-3 pr-3 shadow-sm placeholder:italic placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 sm:text-sm"
+                  placeholder="your-handle"
+                  type="text"
+                />
+                .{domainName}
+              </div>
+              {handleValueValidator && (
+                <div className="mt-2 text-red-500">
+                  Invalid handle format.
+                </div>
+              )}
+            </div>
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={handleBack}
+                className="bg-[#646464] text-white px-4 py-2 rounded-md mr-2"
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                onClick={handleNext}
+                disabled={!handleValue || handleValueValidator}
+                className={`px-4 py-2 rounded-md ${
+                  !handleValue || handleValueValidator
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : "bg-blue text-white"
+                }`}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* --- Step 3: Navigation Instructions --- */}
         {currentStep === 3 && (
           <div>
@@ -295,7 +242,7 @@ export default function HandleForm() {
               <div className="pt-2">DID Value:</div>
               <div className="font-mono">
                 <input
-                  onChange={handleInputChange(
+                  onChange={delayedInput(
                     setDomainValue,
                     setDomainValueValidator,
                     domainType === "file"
@@ -337,7 +284,6 @@ export default function HandleForm() {
               </button>
               {recordMutation.error && (
                 <div className="mt-2 text-red-500">
-                  {/* eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */}
                   Error: {recordMutation.error.message}
                 </div>
               )}

@@ -16,6 +16,26 @@ export const handleRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input }) => {
+      // Step 1: Check if the handle is already taken in the database
+      try {
+        const existingHandle = await prisma.handle.findFirst({
+          where: {
+            AND: [
+              { handle: { equals: input.handleValue, mode: "insensitive" } },
+              { subdomain: { equals: input.domainName, mode: "insensitive" } },
+            ],
+          },
+        });
+
+        if (existingHandle) {
+          throw new Error("This handle is already taken!");
+        }
+      } catch (e) {
+        console.error(e);
+        throw new Error("Could not connect to the database");
+      }
+
+      // Step 2: Proceed with other checks and logic if the handle is available
       if (!input.handleValue || !input.domainName || !input.domainValue) {
         throw Error("Invalid input");
       }
