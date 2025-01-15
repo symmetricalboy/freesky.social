@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, type Dispatch, type SetStateAction, type ChangeEvent } from 'react'
 import { api } from "~/utils/api";
 import Select from "../Select";
 import regex from "~/utils/regex";
