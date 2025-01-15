@@ -1,0 +1,17 @@
+{
+  "rewrites": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "(?<subdomain>[^.]+)\\.(?<domain>.+)"
+        }
+      ],
+      "destination": "/api/:path*"
+    }
+  ],
+  "env": {
+    "VERCEL_ENV": "${VERCEL_ENV}"
+  }
+} 

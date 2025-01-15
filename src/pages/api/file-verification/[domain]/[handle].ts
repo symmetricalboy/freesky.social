@@ -42,7 +42,7 @@ export default async function handler(
       .status(200)
       .setHeader("content-type", "text/plain")
       .setHeader("Cache-Control", "public, max-age=86400")
-      .end(`${savedHandle.subdomainValue.replace("did=", "")}`);
+      .end(`${savedHandle.subdomainValue}`);
     return;
   }
 
