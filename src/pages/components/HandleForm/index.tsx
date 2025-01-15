@@ -1,40 +1,53 @@
-import { useState, type Dispatch, type SetStateAction, type ChangeEvent } from 'react'
+import { useState } from 'react'
 import { api } from "~/utils/api";
 import Select from "../Select";
 import regex from "~/utils/regex";
 import { BskyAgent } from '@atproto/api';
 import AnimatedEllipsis from "../AnimatedEllipsis";
-
-type Timer = ReturnType<typeof setTimeout>;
-
-// Add a new type for handle availability response
-type HandleAvailabilityResponse = {
-  available: boolean;
-  error?: string;
-};
+import { type HandleAvailabilityResponse } from '~/types/handle';
+import { createDelayedValidator } from '~/utils/form';
 
 export default function HandleForm() {
   // --- State Variables ---
   const [currentStep, setCurrentStep] = useState(1);
   const [domainName, setDomainName] = useState("bsky.social");
   const [handleValue, sethandleValue] = useState("");
-  const [domainValue, setDomainValue] = useState("");
   const [blueskyIdentifier, setBlueskyIdentifier] = useState("");
   const [blueskyPassword, setBlueskyPassword] = useState("");
-
-  // --- Form Validation ---
-  const [handleValueValidator, sethandleValueValidator] =
-    useState<boolean>(false);
-  const [domainValueValidator, setDomainValueValidator] =
-    useState<boolean>(false);
+  const [isHandleInvalid, setIsHandleInvalid] = useState(false);
+  const [isCheckingHandle, setIsCheckingHandle] = useState(false);
+  const [handleAvailabilityStatus, setHandleAvailabilityStatus] = useState<{
+    isAvailable: boolean | null;
+    error?: string;
+  } | null>(null);
+  const [handleAutoUpdated, setHandleAutoUpdated] = useState(false);
 
   // --- tRPC Hooks ---
   const utils = api.useContext();
   const recordMutation = api.handle.createNew.useMutation({
-    onMutate: async () => {
-      await utils.handle.invalidate();
+    onMutate: () => {
+      void utils.handle.invalidate();
     },
   });
+
+  // Keep queries but rename them since they're used for their effects
+  api.handle.checkAvailability.useQuery(
+    { handleValue, domainName },
+    {
+      enabled: !!handleValue && !isHandleInvalid,
+      onSuccess: (data: HandleAvailabilityResponse) => {
+        setHandleAvailabilityStatus({
+          isAvailable: data.available,
+          error: data.error
+        });
+        setIsCheckingHandle(false);
+      },
+      onError: () => {
+        setHandleAvailabilityStatus(null);
+        setIsCheckingHandle(false);
+      }
+    }
+  );
 
   // --- Navigation Logic ---
   const handleNext = () => {
@@ -116,89 +129,12 @@ export default function HandleForm() {
     }
   };
 
-  // --- Add new tRPC query ---
-  const [isHandleAvailable, setIsHandleAvailable] = useState<boolean | null>(null);
-  const [isCheckingHandle, setIsCheckingHandle] = useState(false);
-
-  // Update the state to include error message
-  const [handleAvailabilityStatus, setHandleAvailabilityStatus] = useState<{
-    isAvailable: boolean | null;
-    error?: string;
-  } | null>(null);
-
-  // Update the tRPC query
-  const _handleAvailabilityQuery = api.handle.checkAvailability.useQuery(
-    { handleValue, domainName },
-    {
-      enabled: !!handleValue && !handleValueValidator,
-      onSuccess: (data: HandleAvailabilityResponse) => {
-        setHandleAvailabilityStatus({
-          isAvailable: data.available,
-          error: data.error
-        });
-        setIsCheckingHandle(false);
-      },
-      onError: () => {
-        setHandleAvailabilityStatus(null);
-        setIsCheckingHandle(false);
-      }
-    }
+  const handleValidator = createDelayedValidator(
+    sethandleValue,
+    setIsHandleInvalid,
+    setIsCheckingHandle,
+    regex.handleValueRegex
   );
-
-  // Add new state for existing handle warning
-  const [existingHandle, setExistingHandle] = useState<{
-    handle: string;
-    domain: string;
-  } | null>(null);
-
-  // Add the query
-  const _existingHandleQuery = api.handle.checkExistingHandle.useQuery(
-    { domainValue },
-    {
-      enabled: !!domainValue && !domainValueValidator,
-      onSuccess: (data) => {
-        if (data.exists) {
-          setExistingHandle({
-            handle: data.handle,
-            domain: data.domain,
-          });
-        } else {
-          setExistingHandle(null);
-        }
-      },
-    }
-  );
-
-  // Move delayedInput inside the component
-  const delayedInput = (
-    onChange: Dispatch<SetStateAction<string>>,
-    action: Dispatch<SetStateAction<boolean>>,
-    regex: RegExp
-  ) => {
-    let timer: Timer | undefined;
-    return (event: ChangeEvent<HTMLInputElement>) => {
-      const value = event.target.value;
-      onChange(value);
-      setIsHandleAvailable(null);
-      setIsCheckingHandle(true);
-
-      clearTimeout(timer);
-
-      const newTimer = setTimeout(() => {
-        if (value.length > 0 && !value.match(regex)) {
-          action(true);
-          setIsCheckingHandle(false);
-        } else {
-          action(false);
-        }
-      }, 2000);
-
-      timer = newTimer;
-    };
-  };
-
-  // Add this state to track if handle was automatically updated
-  const [handleAutoUpdated, setHandleAutoUpdated] = useState(false);
 
   // --- Render the Form ---
   return (
@@ -238,11 +174,7 @@ export default function HandleForm() {
             <div className="mt-5 rounded-md p-3 font-light">
               <div className="font-mono">
                 <input
-                  onChange={delayedInput(
-                    sethandleValue,
-                    sethandleValueValidator,
-                    regex.handleValueRegex
-                  )}
+                  onChange={handleValidator}
                   value={handleValue}
                   className="inline-block rounded-md border border-slate-300 bg-[#4a6187] py-2 pl-3 pr-3 shadow-sm placeholder:italic placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 sm:text-sm"
                   placeholder="your-handle"
@@ -250,12 +182,12 @@ export default function HandleForm() {
                 />
                 .{domainName}
               </div>
-              {handleValueValidator && (
+              {isHandleInvalid && (
                 <div className="mt-2 text-red-500">
                   Invalid handle format.
                 </div>
               )}
-              {!handleValueValidator && handleValue && (
+              {!isHandleInvalid && handleValue && (
                 <div className="mt-2">
                   {isCheckingHandle ? (
                     <span className="text-gray-500">
@@ -286,12 +218,12 @@ export default function HandleForm() {
                 onClick={handleNext}
                 disabled={
                   !handleValue || 
-                  handleValueValidator || 
+                  isHandleInvalid || 
                   !handleAvailabilityStatus?.isAvailable
                 }
                 className={`px-4 py-2 rounded-md ${
                   !handleValue || 
-                  handleValueValidator || 
+                  isHandleInvalid || 
                   !handleAvailabilityStatus?.isAvailable
                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                     : "bg-blue text-white"
@@ -382,19 +314,6 @@ export default function HandleForm() {
                   <li>Update your handle automatically</li>
                 </ol>
               </div>
-
-              {existingHandle && (
-                <div className="mt-4 p-4 bg-yellow-100/10 border border-yellow-400 rounded-md text-yellow-300">
-                  <p className="font-medium">Warning: You already have a handle</p>
-                  <p className="mt-2">
-                    You currently have the handle <span className="font-mono">@{existingHandle.handle}.{existingHandle.domain}</span>
-                  </p>
-                  <p className="mt-2">
-                    If you continue, you will lose this handle and it will be replaced with{' '}
-                    <span className="font-mono">@{handleValue}.{domainName}</span>
-                  </p>
-                </div>
-              )}
             </div>
 
             <div className="mt-4">
@@ -407,7 +326,7 @@ export default function HandleForm() {
               </button>
               <button
                 type="button"
-                onClick={addRecord}
+                onClick={() => void addRecord()}
                 disabled={!blueskyIdentifier || !blueskyPassword}
                 className={`px-4 py-2 rounded-md ${
                   !blueskyIdentifier || !blueskyPassword
@@ -415,7 +334,7 @@ export default function HandleForm() {
                     : "bg-blue text-white"
                 }`}
               >
-                {existingHandle ? 'Replace Handle' : 'Submit'}
+                Submit
               </button>
               {recordMutation.error && (
                 <div className="mt-2 text-red-500">
