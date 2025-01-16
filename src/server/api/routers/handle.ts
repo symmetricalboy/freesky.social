@@ -214,7 +214,7 @@ export const handleRouter = createTRPCRouter({
       handleValue: z.string(),
       domainName: z.string()
     }))
-    .query(async ({ input, ctx }) => {
+    .query(async ({ input }) => {
       console.log(`Checking availability for ${input.handleValue}.${input.domainName}`);
       
       // First validate handle format
@@ -294,6 +294,8 @@ export const handleRouter = createTRPCRouter({
 
   test: publicProcedure
     .query(async () => {
+      // Add a simple database query to make it actually async
+      await prisma.$queryRaw`SELECT 1`;
       return { status: "ok", message: "tRPC endpoint is working" };
     }),
 });
