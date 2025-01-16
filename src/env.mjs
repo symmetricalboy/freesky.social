@@ -1,7 +1,7 @@
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
-const databaseUrl = process.env.DATABASE_URL;
+const databaseUrl = process.env.POSTGRES_PRISMA_URL;
 console.log("Database URL being used:", databaseUrl?.split("@")[1]); // Logs the URL safely without credentials
 
 export const env = createEnv({
@@ -10,7 +10,7 @@ export const env = createEnv({
    * isn't built with invalid env vars.
    */
   server: {
-    DATABASE_URL: z.string().url(),
+    POSTGRES_PRISMA_URL: z.string().url(),
     NODE_ENV: z.enum(["development", "production", "test"]),
     VERCEL_ENV: z.enum(["production", "preview", "development"]).optional(),
     NEXTAUTH_SECRET:
@@ -44,7 +44,7 @@ export const env = createEnv({
    * middlewares) or client-side so we need to destruct manually.
    */
   runtimeEnv: {
-    DATABASE_URL: process.env.DATABASE_URL,
+    POSTGRES_PRISMA_URL: process.env.POSTGRES_PRISMA_URL,
     NODE_ENV: process.env.NODE_ENV,
     VERCEL_ENV: process.env.VERCEL_ENV,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
