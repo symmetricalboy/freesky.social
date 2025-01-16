@@ -58,7 +58,7 @@ export default function Home() {
     },
     {
       q: "I'm having trouble claiming a handle. What should I do?",
-      a: <span>If you're having trouble claiming a handle, feel free to contact Dylan Gregori Singer using <a className="text-[#0560ff]" href="https://bsky.app/profile/symmetricalboy.com" target="_blank" rel="noreferrer">@symmetricalboy.com</a> or <a className="text-[#0560ff]" href="https://bsky.app/profile/freesky.social" target="_blank" rel="noreferrer">@freesky.social</a> to request assistance!</span>,
+      a: <span>If you&apos;re having trouble claiming a handle, feel free to contact Dylan Gregori Singer using <a className="text-[#0560ff]" href="https://bsky.app/profile/symmetricalboy.com" target="_blank" rel="noreferrer">@symmetricalboy.com</a> or <a className="text-[#0560ff]" href="https://bsky.app/profile/freesky.social" target="_blank" rel="noreferrer">@freesky.social</a> to request assistance!</span>,
     },
     {
       q: "I still have questions!",

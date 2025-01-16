@@ -3,7 +3,6 @@ import { api } from "~/utils/api";
 import Select from "../Select";
 import regex from "~/utils/regex";
 import { BskyAgent } from '@atproto/api';
-import AnimatedEllipsis from "../AnimatedEllipsis";
 import { type HandleAvailabilityResponse } from '~/types/handle';
 import { createDelayedValidator } from '~/utils/form';
 import { env } from "~/env.mjs";
@@ -24,7 +23,6 @@ export default function HandleForm() {
     isAvailable: boolean | null;
     error?: string;
   } | null>(null);
-  const [handleAutoUpdated, setHandleAutoUpdated] = useState(false);
 
   // --- tRPC Hooks ---
   const utils = api.useContext();

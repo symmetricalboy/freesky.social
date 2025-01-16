@@ -1,8 +1,8 @@
 import { prisma } from "../db";
 
-async function syncHandleStatuses() {
+async function _syncHandleStatuses() {
   const handles = await prisma.handle.findMany();
-  for (const handle of handles) {
+  for (const _handle of handles) {
     // Revalidate handle status
     // Update cache if needed
     // Log discrepancies

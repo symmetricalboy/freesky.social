@@ -217,7 +217,7 @@ export const handleRouter = createTRPCRouter({
 
   checkAvailability: publicProcedure
     .input(z.object({ handleValue: z.string(), domainName: z.string() }))
-    .query(async ({ input, ctx }) => {
+    .query(async ({ input, _ctx }) => {
       if (env.IGNORE_HANDLE_IS_TAKEN === "true") {
         return { available: true };
       }
