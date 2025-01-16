@@ -6,18 +6,6 @@ import { TRPCError } from "@trpc/server";
 import { env } from "~/env.mjs";
 import { BskyAgent } from '@atproto/api';
 
-async function checkIfHandleIsAvailable(handleValue: string, domainName: string) {
-  const handle = await prisma.handle.findFirst({
-    where: {
-      AND: [
-        { handle: { equals: handleValue, mode: "insensitive" } },
-        { domain: { name: { equals: domainName, mode: "insensitive" } } },
-      ],
-    },
-  });
-  return !handle;
-}
-
 const validateHandleFormat = (handle: string): boolean => {
   // Handle should be 1-63 characters
   if (handle.length < 1 || handle.length > 63) {
@@ -217,7 +205,7 @@ export const handleRouter = createTRPCRouter({
 
   checkAvailability: publicProcedure
     .input(z.object({ handleValue: z.string(), domainName: z.string() }))
-    .query(async ({ input, ctx }) => {
+    .query(async ({ input }) => {
       if (env.IGNORE_HANDLE_IS_TAKEN === "true") {
         return { available: true };
       }
