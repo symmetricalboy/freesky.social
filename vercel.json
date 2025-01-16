@@ -9,6 +9,10 @@
         }
       ],
       "destination": "/api/:path*"
+    },
+    {
+      "source": "/api/trpc/:path*",
+      "destination": "/api/trpc/:path*"
     }
   ],
   "env": {

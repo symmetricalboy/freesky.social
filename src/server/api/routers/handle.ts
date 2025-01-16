@@ -291,4 +291,9 @@ export const handleRouter = createTRPCRouter({
         exists: false,
       };
     }),
+
+  test: publicProcedure
+    .query(async () => {
+      return { status: "ok", message: "tRPC endpoint is working" };
+    }),
 });
