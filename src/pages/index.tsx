@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 import Head from "next/head";
 import HandleForm from "./components/HandleForm";
 import { useState, Fragment } from "react";
