@@ -28,7 +28,7 @@ export default async function handler(
       where: {
         AND: [
           { handle: { equals: handle, mode: "insensitive" } },
-          { subdomain: { equals: domain, mode: "insensitive" } },
+          { domain: { name: { equals: domain, mode: "insensitive" } } },
         ],
       },
     });
@@ -42,7 +42,7 @@ export default async function handler(
       .status(200)
       .setHeader("content-type", "text/plain")
       .setHeader("Cache-Control", "public, max-age=86400")
-      .end(`${savedHandle.subdomainValue}`);
+      .end(`${savedHandle.did}`);
     return;
   }
 
