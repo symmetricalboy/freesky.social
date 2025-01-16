@@ -14,6 +14,7 @@ export default function HandleForm() {
   // --- State Variables ---
   const [currentStep, setCurrentStep] = useState(1);
   const [domainName, setDomainName] = useState("bsky.social");
+  const [hasDomainSelection, setHasDomainSelection] = useState(false);
   const [handleValue, sethandleValue] = useState("");
   const [blueskyIdentifier, setBlueskyIdentifier] = useState("");
   const [blueskyPassword, setBlueskyPassword] = useState("");
@@ -91,13 +92,18 @@ export default function HandleForm() {
         service: 'https://bsky.social'
       });
 
-      await agent.login({
-        identifier: blueskyIdentifier,
-        password: blueskyPassword
-      });
+      try {
+        await agent.login({
+          identifier: blueskyIdentifier,
+          password: blueskyPassword
+        });
+      } catch (error) {
+        console.error("Login error:", error);
+        throw new Error("Invalid Bluesky credentials. Please check your account and app password.");
+      }
 
       const did = agent.session?.did;
-      if (!did) throw new Error("Could not get DID from session");
+      if (!did) throw new Error("Could not get DID from session. Please try again.");
 
       await recordMutation.mutateAsync({
         handleValue,
@@ -111,7 +117,7 @@ export default function HandleForm() {
       setCurrentStep(4);
     } catch (error) {
       console.error("Error:", error);
-      throw error;
+      // Don't rethrow the error, just let the mutation error state handle it
     }
   };
 
@@ -160,11 +166,19 @@ export default function HandleForm() {
         {currentStep === 1 && (
           <div>
             <h2 className="text-3xl font-bold mb-12 mt-12">Choose a domain</h2>
-            <Select value={domainName} onChange={setDomainName} />
+            <Select value={domainName} onChange={(value) => {
+              setDomainName(value);
+              setHasDomainSelection(true);
+            }} />
             <button
               type="button"
               onClick={handleNext}
-              className="mt-24 bg-blue px-20 py-5 text-white hover:bg-[#4a6187] hover:ring-1 hover:font-bold hover:ring-white hover:ring-offset-10 text-sm"
+              disabled={!hasDomainSelection}
+              className={`mt-24 px-20 py-5 text-sm ${
+                !hasDomainSelection
+                  ? "bg-[#161616] text-[#646464] cursor-not-allowed opacity-50"
+                  : "bg-blue text-white hover:bg-[#4a6187] hover:ring-1 hover:font-bold hover:ring-white hover:ring-offset-10"
+              }`}
             >
               Next
             </button>
@@ -187,12 +201,12 @@ export default function HandleForm() {
                 />
                 <span className="px-2">.{domainName}</span>
               </div>
-              <div className="mt-4 text-[#999999] text-sm text-left">
+              <div className="mt-12 text-[#999999] text-sm text-left">
                 <ul className="list-disc list-inside space-y-1">
                   <li>Handles can contain Letters ( a-z ), numbers ( 0-9 ), and hypens ( - ).</li>
                   <li>Handles cannot start or end with a hyphen ( - ).</li>
                   <li>Handles are not case-sensitive, and are always shown in lowercase.</li>
-                  <li>Handles can be between 1 and 63 characters in length.</li>
+                  <li>Handles can be between 2 and 63 characters in length.</li>
                 </ul>
               </div>
               <div className="h-[220px] mt-8">
@@ -265,6 +279,19 @@ export default function HandleForm() {
         {currentStep === 3 && (
           <div>
             <h2 className="text-3xl font-bold mb-16 mt-12">Verify account ownership</h2>
+            {recordMutation.error && (
+              <div className="mb-8 p-4 bg-[#ff000015] border-2 border-[#ff000030] rounded-lg">
+                <div className="flex items-center">
+                  <span className="text-red-500 text-2xl mr-3">✗</span>
+                  <p className="text-red-500">
+                    {recordMutation.error.message}
+                  </p>
+                </div>
+                <p className="mt-2 text-sm text-[#999999]">
+                  Please check your credentials and try again. Make sure you&apos;re using an App Password from your Bluesky settings.
+                </p>
+              </div>
+            )}
             <div className="font-light space-y-12 mb-16">
               <div className="mb-12">
                 <Disclosure>
@@ -395,39 +422,21 @@ export default function HandleForm() {
               <div className="flex flex-col gap-2">
                 <p>2. Click &quot;Handle&quot; :</p>
                 <div className="flex justify-center">
-                  <Image
-                    src="/handle.png"
-                    alt="Handle example"
-                    width={400}
-                    height={300}
-                    className="rounded-lg shadow-lg"
-                  />
+                  <img src="/handle.png" alt="Click Handle" className="h-auto w-48 mt-4 border-4 border-[#aac7ec] p-10 bg-[#32323232] rounded-3xl shadow-2xl" />
                 </div>
               </div>
 
               <div className="flex flex-col gap-2">
                 <p>3. Click &quot;I have my own domain&quot; :</p>
                 <div className="flex justify-center">
-                  <Image
-                    src="/domain.png"
-                    alt="Domain example"
-                    width={400}
-                    height={300}
-                    className="rounded-lg shadow-lg"
-                  />
+                  <img src="/domain.png" alt="Click I have my own domain" className="h-auto w-full mt-4 border-4 border-[#aac7ec] p-12 bg-[#32323232] rounded-3xl shadow-2xl" />
                 </div>
               </div>
 
               <div className="flex flex-col gap-2">
                 <p>4. Click &quot;No DNS Panel&quot; :</p>
                 <div className="flex justify-center">
-                  <Image
-                    src="/no-panel.png"
-                    alt="No panel example"
-                    width={400}
-                    height={300}
-                    className="rounded-lg shadow-lg"
-                  />
+                  <img src="/no-panel.png" alt="Click No DNS Panel" className="h-auto w-96 mt-4 border-4 border-[#aac7ec] p-12 bg-[#32323232] rounded-3xl shadow-2xl" />
                 </div>
               </div>
 
@@ -458,39 +467,21 @@ export default function HandleForm() {
               <div className="flex flex-col gap-2">
                 <p>6. Paste your handle into the field at the top :</p>
                 <div className="flex justify-center">
-                  <Image
-                    src="/enter.png"
-                    alt="Enter your new handle"
-                    width={400}
-                    height={300}
-                    className="rounded-lg shadow-lg"
-                  />
+                  <img src="/enter.png" alt="Enter your new handle" className="h-auto w-96 mt-4 border-4 border-[#aac7ec] p-12 bg-[#32323232] rounded-3xl shadow-2xl" />
                 </div>
               </div>
 
               <div className="flex flex-col gap-2">
                 <p>7. Click &quot;Verify Text File&quot; :</p>
                 <div className="flex justify-center">
-                  <Image
-                    src="/verify.png"
-                    alt="Click Verify Text File"
-                    width={400}
-                    height={300}
-                    className="rounded-lg shadow-lg"
-                  />
+                  <img src="/verify.png" alt="Click Verify Text File" className="h-auto w-full mt-4 border-4 border-[#aac7ec] p-12 bg-[#32323232] rounded-3xl shadow-2xl" />
                 </div>
               </div>
 
               <div className="flex flex-col gap-2">
                 <p>8. Click &quot;Update Handle&quot; :</p>
                 <div className="flex justify-center">
-                  <Image
-                    src="/update.png"
-                    alt="Click Update Handle"
-                    width={400}
-                    height={300}
-                    className="rounded-lg shadow-lg"
-                  />
+                  <img src="/update.png" alt="Click Update Handle" className="h-auto w-full mt-4 border-4 border-[#aac7ec] p-12 bg-[#32323232] rounded-3xl shadow-2xl" />
                 </div>
               </div>
             </div>
