@@ -9,7 +9,7 @@ export default async function handler(
     const { handle, domain } = req.query;
 
     if (!handle || !domain || typeof handle !== 'string' || typeof domain !== 'string') {
-      return res.status(400).json({ error: "Invalid request parameters" });
+      return res.status(400).send("Invalid request parameters");
     }
 
     // Find the handle in the database
@@ -23,13 +23,14 @@ export default async function handler(
     });
 
     if (!handleRecord) {
-      return res.status(404).json({ error: "Handle not found" });
+      return res.status(404).send("Handle not found");
     }
 
-    // Return the DID in the correct format
-    return res.status(200).json({ did: handleRecord.did });
+    // Set content type to plain text and return just the DID string
+    res.setHeader('Content-Type', 'text/plain');
+    return res.status(200).send(handleRecord.did);
   } catch (error) {
     console.error("Error in atproto-did endpoint:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    return res.status(500).send("Internal server error");
   }
 } 
