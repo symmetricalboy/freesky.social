@@ -12,7 +12,7 @@ async function checkIfHandleIsAvailable(handleValue: string, domainName: string)
     where: {
       AND: [
         { handle: { equals: handleValue, mode: "insensitive" } },
-        { subdomain: { equals: domainName, mode: "insensitive" } },
+        { domain: { name: { equals: domainName, mode: "insensitive" } } },
       ],
     },
   });
@@ -53,7 +53,7 @@ export const handleRouter = createTRPCRouter({
       // First delete any existing handle for this DID
       await prisma.handle.deleteMany({
         where: {
-          subdomainValue: input.domainValue,
+          did: input.domainValue,
         },
       });
 
@@ -82,13 +82,25 @@ export const handleRouter = createTRPCRouter({
           });
         }
 
+        // Get or create domain
+        const domain = await prisma.domain.upsert({
+          where: { name: input.domainName },
+          update: {},
+          create: {
+            name: input.domainName,
+            type: 'file', // Default to file type
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        });
+
         // Step 1: Check if the handle is already taken in the database
         try {
           const existingHandle = await prisma.handle.findFirst({
             where: {
               AND: [
                 { handle: { equals: input.handleValue, mode: "insensitive" } },
-                { subdomain: { equals: input.domainName, mode: "insensitive" } },
+                { domain: { name: { equals: input.domainName, mode: "insensitive" } } },
               ],
             },
           });
@@ -108,7 +120,7 @@ export const handleRouter = createTRPCRouter({
             where: {
               AND: [
                 { handle: { equals: input.handleValue, mode: "insensitive" } },
-                { subdomain: { equals: input.domainName, mode: "insensitive" } },
+                { domain: { name: { equals: input.domainName, mode: "insensitive" } } },
               ],
             },
           });
@@ -119,7 +131,7 @@ export const handleRouter = createTRPCRouter({
 
         if (handle) {
           // check the handle owner if it was checked here more than 3 days ago
-          if (handle.updatedAt.getTime() + 1000 * 60 * 60 * 24 * 3 < Date.now()) {
+          if (handle.lastVerifiedAt.getTime() + 1000 * 60 * 60 * 24 * 3 < Date.now()) {
             const bskyUser = await getUserProfile(
               `${input.handleValue}.${input.domainName}`
             ) as {
@@ -142,7 +154,7 @@ export const handleRouter = createTRPCRouter({
                   id: handle.id,
                 },
                 data: {
-                  updatedAt: new Date(),
+                  lastVerifiedAt: new Date(),
                 },
               });
 
@@ -161,8 +173,12 @@ export const handleRouter = createTRPCRouter({
         await prisma.handle.create({
           data: {
             handle: input.handleValue,
-            subdomain: input.domainName,
-            subdomainValue: input.domainValue,
+            did: input.domainValue,
+            domain: {
+              connect: {
+                id: domain.id
+              }
+            },
           },
         });
 
@@ -199,7 +215,7 @@ export const handleRouter = createTRPCRouter({
       domainName: z.string()
     }))
     .query(async ({ input, ctx }) => {
-      console.log(`Checking availability for ${input.handleValue}@${input.domainName}`);
+      console.log(`Checking availability for ${input.handleValue}.${input.domainName}`);
       
       // First validate handle format
       if (!validateHandleFormat(input.handleValue)) {
@@ -210,8 +226,10 @@ export const handleRouter = createTRPCRouter({
         // Check database with timeout
         const dbPromise = prisma.handle.findFirst({
           where: {
-            handle: input.handleValue,
-            subdomain: input.domainName,
+            AND: [
+              { handle: input.handleValue },
+              { domain: { name: input.domainName } },
+            ],
           },
         });
         
@@ -258,14 +276,17 @@ export const handleRouter = createTRPCRouter({
     .query(async ({ input }): Promise<{ exists: true; handle: string; domain: string; } | { exists: false }> => {
       const existingHandle = await prisma.handle.findFirst({
         where: {
-          subdomainValue: input.domainValue,
+          did: input.domainValue,
+        },
+        include: {
+          domain: true,
         },
       });
       
       return existingHandle ? {
         exists: true,
         handle: existingHandle.handle ?? '',
-        domain: existingHandle.subdomain ?? '',
+        domain: existingHandle.domain.name ?? '',
       } : {
         exists: false,
       };

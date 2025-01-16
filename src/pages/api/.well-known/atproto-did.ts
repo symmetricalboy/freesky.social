@@ -6,22 +6,18 @@ export default async function handler(
   res: NextApiResponse
 ) {
   try {
-    // Get the hostname from the request
-    const hostname = req.headers.host;
-    if (!hostname) {
-      return res.status(400).json({ error: "No hostname provided" });
-    }
+    const { handle, domain } = req.query;
 
-    // Split the hostname to get handle and domain
-    const [handle, ...domainParts] = hostname.split('.');
-    const domain = domainParts.join('.');
+    if (!handle || !domain || typeof handle !== 'string' || typeof domain !== 'string') {
+      return res.status(400).json({ error: "Invalid request parameters" });
+    }
 
     // Find the handle in the database
     const handleRecord = await prisma.handle.findFirst({
       where: {
         AND: [
           { handle: { equals: handle, mode: "insensitive" } },
-          { subdomain: { equals: domain, mode: "insensitive" } },
+          { domain: { name: { equals: domain, mode: "insensitive" } } },
         ],
       },
     });
@@ -31,7 +27,7 @@ export default async function handler(
     }
 
     // Return the DID in the correct format
-    return res.status(200).json({ did: handleRecord.subdomainValue });
+    return res.status(200).json({ did: handleRecord.did });
   } catch (error) {
     console.error("Error in atproto-did endpoint:", error);
     return res.status(500).json({ error: "Internal server error" });

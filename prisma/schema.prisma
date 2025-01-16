@@ -12,19 +12,31 @@ datasource db {
   directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
-model Example {
+model Domain {
     id        String   @id @default(cuid())
+    name      String   @unique
+    type      String   // "cloudflare" or "file"
+    config    Json?    // For storing domain-specific configuration (e.g. Cloudflare zone ID)
+    handles   Handle[]
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+
+    @@index([name])
 }
 
 model Handle {
     id             String   @id @default(cuid())
     handle         String
-    subdomain      String
-    subdomainValue String
+    domain         Domain   @relation(fields: [domainId], references: [id])
+    domainId       String
+    did            String   // The user's DID
     createdAt      DateTime @default(now())
     updatedAt      DateTime @updatedAt
+    lastVerifiedAt DateTime @default(now())
+
+    @@unique([handle, domainId])
+    @@index([did])
+    @@index([handle, domainId])
 }
 
 // Necessary for Next auth

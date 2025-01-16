@@ -97,7 +97,7 @@ export default function HandleForm() {
             for(let i = 0; i < verifyAttempts; i++) {
               try {
                 // Check if our handle verification is working
-                const response = await fetch(`/.well-known/atproto-did/${handleValue}@${domainName}`);
+                const response = await fetch(`/.well-known/atproto-did/${handleValue}.${domainName}`);
                 if (response.ok) {
                   // If verification is working, try to update the handle
                   await agent.updateHandle({
@@ -393,7 +393,7 @@ export default function HandleForm() {
             {handleAutoUpdated ? (
               <div>
                 <p className="mb-4">
-                  Your handle has been successfully updated to <span className="font-mono">@{handleValue}.{domainName}</span>!
+                  Your handle has been successfully updated to <span className="font-mono">{handleValue}.{domainName}</span>!
                 </p>
                 <p>
                   The change should be visible on your profile immediately.
