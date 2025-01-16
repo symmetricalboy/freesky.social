@@ -11,29 +11,28 @@ export const config = {
 };
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
-  // Configure CORS headers
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS,PATCH,DELETE,POST,PUT");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, x-trpc-source"
-  );
-
-  // Handle preflight requests
-  if (req.method === "OPTIONS") {
-    res.status(200).end();
-    return;
-  }
-
   // Log request details
   console.log('tRPC request:', {
     method: req.method,
     url: req.url,
     query: req.query,
-    trpc: req.query.trpc,
+    path: req.query.trpc,
   });
 
+  // Handle preflight requests
+  if (req.method === "OPTIONS") {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS,PATCH,DELETE,POST,PUT");
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, x-trpc-source"
+    );
+    res.status(200).end();
+    return;
+  }
+
   try {
+    // Create and execute the tRPC handler
     const apiHandler = createNextApiHandler({
       router: appRouter,
       createContext: createTRPCContext,
@@ -43,11 +42,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           message: error.message,
           code: error.code,
           stack: error.stack,
-          cause: error.cause,
         });
       },
     });
-    
+
+    // Execute the handler
     return await apiHandler(req, res);
   } catch (error) {
     console.error('Unhandled tRPC error:', error);
