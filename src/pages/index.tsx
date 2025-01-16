@@ -22,7 +22,7 @@ export default function Home() {
     },
     {
       q: "Do I need a Bluesky account?",
-      a: <span>Yes, you will need an existing ATProto/Bluesky account to claim a handle. If you don't have one yet, you can create one for free at <a className="text-[#0560ff]" href="https://bsky.app" target="_blank" rel="noreferrer">bsky.app</a>.</span>,
+      a: <span>Yes, you will need an existing ATProto/Bluesky account to claim a handle. If you don&apos;t have one yet, you can create one for free at <a className="text-[#0560ff]" href="https://bsky.app" target="_blank" rel="noreferrer">bsky.app</a>.</span>,
     },
     {
       q: "What happens to my bsky.social username?",
