@@ -22,7 +22,7 @@ export default function Home() {
     },
     {
       q: "Do I need a Bluesky account?",
-      a: <span>Yes, you will need an existing ATProto/Bluesky account to claim a handle. If you don&apos;t have one yet, you can create one for free at <a className="text-[#0560ff]" href="https://bsky.app" target="_blank" rel="noreferrer">bsky.app</a>.</span>,
+      a: <span>Yes, you will need an existing ATProto/Bluesky account to claim a handle. If you don't have one yet, you can create one for free at <a className="text-[#0560ff]" href="https://bsky.app" target="_blank" rel="noreferrer">bsky.app</a>.</span>,
     },
     {
       q: "What happens to my bsky.social username?",
@@ -41,8 +41,8 @@ export default function Home() {
       a: "Yup!",
     },
     {
-      q: "I don&apos;t trust you. Is Freesky REALLY safe to use?",
-      a: <span>Yes! We promise! And we can prove it, too! Freesky is safe to use, and your data is never shared with anyone in any manner beyond what is strictly necessary to claim a handle.<br/><br/>Your ATProto/Bluesky account is never used for anything other than to claim a handle. No significant or private userdata is ever stored on Freesky&apos;s servers.<br/><br/>We only keep a database that is a simple list of handles that have been claimed, and the associated DID (that&apos;s your fancy Web3 account identifier).<br/><br/>You can verify this yourself by looking at the source code on GitHub. You can see exactly what code is deployed to Vercel right from the repository page.</span>,
+      q: "I don't trust you. Is Freesky REALLY safe to use?",
+      a: <span>Yes! We promise! And we can prove it, too! Freesky is safe to use, and your data is never shared with anyone in any manner beyond what is strictly necessary to claim a handle.<br/><br/>Your ATProto/Bluesky account is never used for anything other than to claim a handle. No significant or private userdata is ever stored on Freesky's servers.<br/><br/>We only keep a database that is a simple list of handles that have been claimed, and the associated DID (that's your fancy Web3 account identifier).<br/><br/>You can verify this yourself by looking at the source code on GitHub. You can see exactly what code is deployed to Vercel right from the repository page.</span>,
     },
     {
       q: "Who created Freesky?",
@@ -57,8 +57,8 @@ export default function Home() {
       a: <span>You can find the source code for Freesky on GitHub at <a className="text-[#0560ff]" href="https://github.com/symmetricalboy/freesky.social" target="_blank" rel="noreferrer">github.com/symmetricalboy/freesky.social</a>.</span>,
     },
     {
-      q: "I&apos;m having trouble claiming a handle. What should I do?",
-      a: <span>If you&apos;re having trouble claiming a handle, feel free to contact Dylan Gregori Singer using <a className="text-[#0560ff]" href="https://bsky.app/profile/symmetricalboy.com" target="_blank" rel="noreferrer">@symmetricalboy.com</a> or <a className="text-[#0560ff]" href="https://bsky.app/profile/freesky.social" target="_blank" rel="noreferrer">@freesky.social</a> to request assistance!</span>,
+      q: "I'm having trouble claiming a handle. What should I do?",
+      a: <span>If you're having trouble claiming a handle, feel free to contact Dylan Gregori Singer using <a className="text-[#0560ff]" href="https://bsky.app/profile/symmetricalboy.com" target="_blank" rel="noreferrer">@symmetricalboy.com</a> or <a className="text-[#0560ff]" href="https://bsky.app/profile/freesky.social" target="_blank" rel="noreferrer">@freesky.social</a> to request assistance!</span>,
     },
     {
       q: "I still have questions!",
