@@ -40,7 +40,7 @@ export const handleRouter = createTRPCRouter({
         password: z.string(),
       })
     )
-    .mutation(async ({ input, _ctx }) => {
+    .mutation(async ({ input }) => {
       // Skip all validation and DB operations in test mode
       if (env.TEST_MODE === "true" || env.NEXT_PUBLIC_TEST_MODE === "true") {
         return { success: true };
