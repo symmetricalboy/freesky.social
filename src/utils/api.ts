@@ -9,12 +9,16 @@ import { type AppRouter } from "~/server/api/root";
 
 const getBaseUrl = () => {
   if (typeof window !== "undefined") {
-    // browser should use window.location.origin
+    // browser should use current origin
     return window.location.origin;
   }
+  
+  // SSR should use VERCEL_URL
   if (process.env.VERCEL_URL) {
     return `https://${process.env.VERCEL_URL}`;
   }
+  
+  // Fallback for local development
   return `http://localhost:${process.env.PORT ?? 3000}`;
 };
 
@@ -37,7 +41,14 @@ export const api = createTRPCNext<AppRouter>({
           headers() {
             return {
               'x-trpc-source': 'client',
+              'Content-Type': 'application/json',
             };
+          },
+          fetch(url, options) {
+            return fetch(url, {
+              ...options,
+              credentials: 'include',
+            });
           },
         }),
       ],

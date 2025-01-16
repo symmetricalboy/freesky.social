@@ -3,27 +3,35 @@ import { appRouter } from "~/server/api/root";
 import { createTRPCContext } from "~/server/api/trpc";
 import type { NextApiRequest, NextApiResponse } from "next";
 
+// Export config to prevent body parsing since tRPC handles that
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   // Configure CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS,PATCH,DELETE,POST,PUT");
   res.setHeader(
     "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, x-trpc"
+    "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, x-trpc-source"
   );
 
+  // Handle preflight requests
   if (req.method === "OPTIONS") {
     res.status(200).end();
     return;
   }
 
   // Log request details
-  await Promise.resolve(console.log('tRPC request:', {
+  console.log('tRPC request:', {
     method: req.method,
     url: req.url,
     query: req.query,
-    headers: req.headers,
-  }));
+    trpc: req.query.trpc,
+  });
 
   try {
     const apiHandler = createNextApiHandler({
@@ -43,7 +51,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     return await apiHandler(req, res);
   } catch (error) {
     console.error('Unhandled tRPC error:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ 
+      error: 'Internal Server Error',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 };
 
