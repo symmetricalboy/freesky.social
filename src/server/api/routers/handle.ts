@@ -294,8 +294,25 @@ export const handleRouter = createTRPCRouter({
 
   test: publicProcedure
     .query(async () => {
-      // Add a simple database query to make it actually async
-      await prisma.$queryRaw`SELECT 1`;
-      return { status: "ok", message: "tRPC endpoint is working" };
+      try {
+        // Test database connection
+        await prisma.$queryRaw`SELECT 1 as connection_test`;
+        
+        // Get database connection info
+        const dbInfo = await prisma.$queryRaw`SELECT current_database(), current_user, version()`;
+        
+        return { 
+          status: "ok", 
+          message: "tRPC endpoint and database connection working",
+          database_info: dbInfo
+        };
+      } catch (error) {
+        console.error('Database test failed:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: error instanceof Error ? error.message : 'Database connection failed',
+          cause: error
+        });
+      }
     }),
 });

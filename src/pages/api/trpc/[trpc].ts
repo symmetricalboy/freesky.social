@@ -18,20 +18,31 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     return;
   }
 
-  // Add an await expression
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  return createNextApiHandler({
-    router: appRouter,
-    createContext: createTRPCContext,
-    onError:
-      env.NODE_ENV === "development"
-        ? ({ path, error }) => {
-            console.error(
-              `❌ tRPC failed on ${path ?? "<no-path>"}: ${error.message}`
-            );
-          }
-        : undefined,
-  })(req, res);
+  console.log('tRPC request:', {
+    method: req.method,
+    url: req.url,
+    query: req.query,
+    headers: req.headers,
+  });
+
+  try {
+    return createNextApiHandler({
+      router: appRouter,
+      createContext: createTRPCContext,
+      onError: ({ path, error }) => {
+        console.error(`❌ tRPC failed on ${path ?? "<no-path>"}:`, {
+          name: error.name,
+          message: error.message,
+          code: error.code,
+          stack: error.stack,
+          cause: error.cause,
+        });
+      },
+    })(req, res);
+  } catch (error) {
+    console.error('Unhandled tRPC error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 };
 
 export default handler;
