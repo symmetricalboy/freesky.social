@@ -9,6 +9,7 @@ import { createDelayedValidator } from '~/utils/form';
 import { env } from "~/env.mjs";
 import { ArrowTopRightOnSquareIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import { Disclosure, Transition } from "@headlessui/react";
+import Image from 'next/image';
 
 export default function HandleForm() {
   // --- State Variables ---
@@ -396,21 +397,39 @@ export default function HandleForm() {
               <div className="flex flex-col gap-2">
                 <p>2. Click &quot;Handle&quot; :</p>
                 <div className="flex justify-center">
-                  <img src="/handle.png" alt="Click Handle" className="h-auto w-48 mt-4 border-4 border-[#aac7ec] p-10 bg-[#32323232] rounded-3xl shadow-2xl" />
+                  <Image
+                    src="/handle.png"
+                    alt="Handle example"
+                    width={400}
+                    height={300}
+                    className="rounded-lg shadow-lg"
+                  />
                 </div>
               </div>
 
               <div className="flex flex-col gap-2">
                 <p>3. Click &quot;I have my own domain&quot; :</p>
                 <div className="flex justify-center">
-                  <img src="/domain.png" alt="Click I have my own domain" className="h-auto w-full mt-4 border-4 border-[#aac7ec] p-12 bg-[#32323232] rounded-3xl shadow-2xl" />
+                  <Image
+                    src="/domain.png"
+                    alt="Domain example"
+                    width={400}
+                    height={300}
+                    className="rounded-lg shadow-lg"
+                  />
                 </div>
               </div>
 
               <div className="flex flex-col gap-2">
                 <p>4. Click &quot;No DNS Panel&quot; :</p>
                 <div className="flex justify-center">
-                  <img src="/no-panel.png" alt="Click No DNS Panel" className="h-auto w-96 mt-4 border-4 border-[#aac7ec] p-12 bg-[#32323232] rounded-3xl shadow-2xl" />
+                  <Image
+                    src="/no-panel.png"
+                    alt="No panel example"
+                    width={400}
+                    height={300}
+                    className="rounded-lg shadow-lg"
+                  />
                 </div>
               </div>
 
@@ -441,21 +460,39 @@ export default function HandleForm() {
               <div className="flex flex-col gap-2">
                 <p>6. Paste your handle into the field at the top :</p>
                 <div className="flex justify-center">
-                  <img src="/enter.png" alt="Enter your new handle" className="h-auto w-96 mt-4 border-4 border-[#aac7ec] p-12 bg-[#32323232] rounded-3xl shadow-2xl" />
+                  <Image
+                    src="/enter.png"
+                    alt="Enter your new handle"
+                    width={400}
+                    height={300}
+                    className="rounded-lg shadow-lg"
+                  />
                 </div>
               </div>
 
               <div className="flex flex-col gap-2">
                 <p>7. Click &quot;Verify Text File&quot; :</p>
                 <div className="flex justify-center">
-                  <img src="/verify.png" alt="Click Verify Text File" className="h-auto w-full mt-4 border-4 border-[#aac7ec] p-12 bg-[#32323232] rounded-3xl shadow-2xl" />
+                  <Image
+                    src="/verify.png"
+                    alt="Click Verify Text File"
+                    width={400}
+                    height={300}
+                    className="rounded-lg shadow-lg"
+                  />
                 </div>
               </div>
 
               <div className="flex flex-col gap-2">
                 <p>8. Click &quot;Update Handle&quot; :</p>
                 <div className="flex justify-center">
-                  <img src="/update.png" alt="Click Update Handle" className="h-auto w-full mt-4 border-4 border-[#aac7ec] p-12 bg-[#32323232] rounded-3xl shadow-2xl" />
+                  <Image
+                    src="/update.png"
+                    alt="Click Update Handle"
+                    width={400}
+                    height={300}
+                    className="rounded-lg shadow-lg"
+                  />
                 </div>
               </div>
             </div>

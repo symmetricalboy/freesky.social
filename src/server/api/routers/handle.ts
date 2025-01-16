@@ -1,7 +1,6 @@
 import { z } from "zod";
-import { createTRPCRouter, publicProcedure, protectedProcedure } from "~/server/api/trpc";
+import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { prisma } from "~/server/db";
-import regex from "~/utils/regex";
 import { getUserProfile } from "~/utils/bsky";
 import { TRPCError } from "@trpc/server";
 import { env } from "~/env.mjs";
@@ -41,7 +40,7 @@ export const handleRouter = createTRPCRouter({
         password: z.string(),
       })
     )
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input, _ctx }) => {
       // Skip all validation and DB operations in test mode
       if (env.TEST_MODE === "true" || env.NEXT_PUBLIC_TEST_MODE === "true") {
         return { success: true };

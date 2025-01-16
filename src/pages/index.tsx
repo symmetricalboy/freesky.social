@@ -41,8 +41,8 @@ export default function Home() {
       a: "Yup!",
     },
     {
-      q: "I don't trust you. Is Freesky REALLY safe to use?",
-      a: <span>Yes! We promise! And we can prove it, too! Freesky is safe to use, and your data is never shared with anyone in any manner beyond what is strictly necessary to claim a handle.<br/><br/>Your ATProto/Bluesky account is never used for anything other than to claim a handle. No significant or private userdata is ever stored on Freesky's servers.<br/><br/>We only keep a database that is a simple list of handles that have been claimed, and the associated DID (that's your fancy Web3 account identifier).<br/><br/>You can verify this yourself by looking at the source code on GitHub. You can see exactly what code is deployed to Vercel right from the repository page.</span>,
+      q: "I don&apos;t trust you. Is Freesky REALLY safe to use?",
+      a: <span>Yes! We promise! And we can prove it, too! Freesky is safe to use, and your data is never shared with anyone in any manner beyond what is strictly necessary to claim a handle.<br/><br/>Your ATProto/Bluesky account is never used for anything other than to claim a handle. No significant or private userdata is ever stored on Freesky&apos;s servers.<br/><br/>We only keep a database that is a simple list of handles that have been claimed, and the associated DID (that&apos;s your fancy Web3 account identifier).<br/><br/>You can verify this yourself by looking at the source code on GitHub. You can see exactly what code is deployed to Vercel right from the repository page.</span>,
     },
     {
       q: "Who created Freesky?",
