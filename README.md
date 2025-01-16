@@ -1,8 +1,8 @@
 # [freesky.social](https://freesky.social)
 
-Everyone deserves to share their own unique identity with pride.
-Freesky provides more options for Bluesky/ATProto handle domains.
-Freesky is free, open source, for all, forever.
+Everyone deserves to share their own unique identity with pride.  
+Freesky provides more options for Bluesky/ATProto handle domains.  
+Freesky is free, open source, for all, forever.  
 
 Find your sky.
 
