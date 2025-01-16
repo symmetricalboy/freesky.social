@@ -1,5 +1,4 @@
 import { createNextApiHandler } from "@trpc/server/adapters/next";
-import { env } from "~/env.mjs";
 import { appRouter } from "~/server/api/root";
 import { createTRPCContext } from "~/server/api/trpc";
 import type { NextApiRequest, NextApiResponse } from "next";
@@ -18,15 +17,16 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     return;
   }
 
-  console.log('tRPC request:', {
+  // Log request details
+  await Promise.resolve(console.log('tRPC request:', {
     method: req.method,
     url: req.url,
     query: req.query,
     headers: req.headers,
-  });
+  }));
 
   try {
-    return createNextApiHandler({
+    const apiHandler = createNextApiHandler({
       router: appRouter,
       createContext: createTRPCContext,
       onError: ({ path, error }) => {
@@ -38,7 +38,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           cause: error.cause,
         });
       },
-    })(req, res);
+    });
+    
+    return await apiHandler(req, res);
   } catch (error) {
     console.error('Unhandled tRPC error:', error);
     res.status(500).json({ error: 'Internal Server Error' });
