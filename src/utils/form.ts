@@ -10,7 +10,7 @@ export const createDelayedValidator = (
 ) => {
   let timer: Timer | undefined;
   return (event: ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
+    const value = event.target.value.toLowerCase();
     onChange(value);
     setIsChecking(true);
 

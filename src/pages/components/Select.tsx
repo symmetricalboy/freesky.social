@@ -13,16 +13,16 @@ export default function Select({ value, onChange }: IProps) {
 
   return (
     <div className="mt-2">
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
         {options.map((domain) => (
           <button
             key={domain}
             type="button"
-            className={`px-10 py-5 rounded-lg text-medium focus:outline-none ring-2 ring-inset ring-gray-300
+            className={`px-12 py-5 rounded-full text-xs hover:ring-white ring-inset
               ${
                 value === domain
-                  ? "bg-blue text-white ring-white font-bold"
-                  : "bg-[#092350] text-white hover:bg-gray-300"
+                  ? "bg-blue text-white ring-white ring-2 font-bold hover:bg-[#999999]"
+                  : "bg-[#092350] text-white ring-[#4a6187] ring-1 hover:bg-[#4a6187] hover:font-bold"
               }`}
             onClick={() => onChange(domain)}
           >

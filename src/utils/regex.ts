@@ -13,7 +13,7 @@ const regex = {
   domain: /^((?!-)[A-Za-z0–9-]{1, 63}(?<!-)\.)+[A-Za-z]{2, 63}$/,
   fileDidValue: /^[a-zA-Z0-9]{3}:[a-zA-Z0-9]{3}:[a-zA-Z0-9]{24}$/,
   dnsDidValue: /^[a-zA-Z0-9]{3}=[a-zA-Z0-9]{3}:[a-zA-Z0-9]{3}:[a-zA-Z0-9]{24}$/,
-  handleValueRegex: /^[a-zA-Z0-9][a-zA-Z0-9.-]+[a-zA-Z0-9]$/,
+  handleValueRegex: /^[a-z0-9]$|^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$/,
 };
 
 export default regex;
