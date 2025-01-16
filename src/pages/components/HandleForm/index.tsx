@@ -187,6 +187,14 @@ export default function HandleForm() {
                 />
                 <span className="px-2">.{domainName}</span>
               </div>
+              <div className="mt-4 text-[#999999] text-sm text-left">
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Handles can contain Letters ( a-z ), numbers ( 0-9 ), and hypens ( - ).</li>
+                  <li>Handles cannot start or end with a hyphen ( - ).</li>
+                  <li>Handles are not case-sensitive, and are always shown in lowercase.</li>
+                  <li>Handles can be between 1 and 63 characters in length.</li>
+                </ul>
+              </div>
               <div className="h-[220px] mt-8">
                 {isHandleInvalid && (
                   <div>
@@ -194,14 +202,6 @@ export default function HandleForm() {
                       <p className="text-5xl mb-4">✗</p>
                       Invalid handle format.
                     </span>
-                    <div className="mt-4 text-[#999999] text-sm text-left">
-                      <ul className="list-disc list-inside space-y-1">
-                        <li>Handles can contain Letters ( a-z ), numbers ( 0-9 ), and hypens ( - ).</li>
-                        <li>Handles cannot start or end with a hyphen ( - ).</li>
-                        <li>Handles are not case-sensitive, and are always shown in lowercase.</li>
-                        <li>Handles can be between 1 and 63 characters in length.</li>
-                      </ul>
-                    </div>
                   </div>
                 )}
                 {!isHandleInvalid && handleValue && (
@@ -242,15 +242,15 @@ export default function HandleForm() {
               </button>
               <button
                 type="button"
-                onClick={() => void addRecord()}
-                disabled={!env.NEXT_PUBLIC_TEST_MODE && (!blueskyIdentifier || !blueskyPassword)}
+                onClick={handleNext}
+                disabled={!handleValue || isHandleInvalid || !handleAvailabilityStatus?.isAvailable}
                 className={`px-20 py-5 text-sm ${
-                  !env.NEXT_PUBLIC_TEST_MODE && (!blueskyIdentifier || !blueskyPassword)
+                  !handleValue || isHandleInvalid || !handleAvailabilityStatus?.isAvailable
                     ? "bg-[#161616] text-[#646464] cursor-not-allowed opacity-50"
                     : "bg-blue text-white hover:bg-[#4a6187] hover:ring-1 hover:font-bold hover:ring-white hover:ring-offset-10"
                 }`}
               >
-                Submit
+                Next
               </button>
             </div>
             {recordMutation.error && (
